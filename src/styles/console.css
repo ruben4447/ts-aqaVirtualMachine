@@ -1,0 +1,44 @@
+:root {
+  --console-white: #e9e7e7;
+  --console-black: #222121;
+}
+
+.ioconsole {
+  margin: 10px;
+  background-color: var(--console-black);
+  height: 20vh;
+  overflow: scroll;
+}
+
+.ioconsole-line {
+  color: var(--console-white);
+  font: bold 16px 'Courier New';
+  white-space: pre;
+}
+
+.ioconsole-line[data-type="response"],
+.ioconsole-line[data-type="notice"] {
+  opacity: 0.8;
+  font-style: italic;
+  font-size: .88em;
+}
+
+.ioconsole-line[data-type="error"] {
+  font-style: bolder;
+  color: tomato;
+  font-size: .9em;
+}
+
+.ioconsole-line>input {
+  border: none;
+  outline: none;
+  caret-color: var(--console-white);
+  background-color: var(--console-black);
+  color: var(--console-white);
+  font: 13px 'Courier New';
+}
+
+.ioconsole *::selection {
+  background: #06e906;
+  color: var(--console-black);
+}

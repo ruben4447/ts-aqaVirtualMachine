@@ -1,0 +1,30 @@
+.tab-controller {
+  border: 1px solid black;
+  margin: none;
+  padding: 8px;
+  background-color: #c4c1c1;
+}
+
+.tab-control-btn {
+  margin-right: 10px;
+  border: 2px solid navy;
+  padding: 3px;
+  background: khaki;
+}
+
+.tab-control-btn[data-open="true"] {
+  background: rgb(197, 240, 140);
+}
+
+.tab-control-btn:hover {
+  border: 2px solid crimson;
+  background: greenyellow;
+  cursor: pointer;
+  user-select: none;
+}
+
+section.tab-content {
+  margin: 2px;
+  border: 1px solid black;
+  padding: 3px;
+}
