@@ -1,22 +1,21 @@
 import MemoryView from "../classes/MemoryView";
 import RegisterView from "../classes/RegisterView";
 import globals from "../globals";
-import { ITabProperties } from "../types/Tabs";
+import { IMemoryTabProperties, ITabInfo } from "../types/Tabs";
+import { hex } from "../utils/general";
 
-interface IMemoryTabProperties extends ITabProperties {
-  memoryView: MemoryView;
-  memoryViewDimensions: [number, number];
-  registerView: RegisterView;
-  registerViewDimensions: [number, number];
-}
+export const info: ITabInfo = {
+  content: undefined,
+  text: 'Memory',
+  displayMulti: false,
+};
 
 export const properties: IMemoryTabProperties = {
   memoryView: undefined,
   memoryViewDimensions: [900, 600],
   registerView: undefined,
   registerViewDimensions: [200, 600],
-  target: undefined,
-  text: 'Memory',
+  updateMemoryViewOnMemoryWrite: true,
 };
 
 /** For MemoryView */
@@ -84,6 +83,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
   p.appendChild(btnBack);
   btnBack.addEventListener('click', () => {
     view.startAddress -= view.rows * view.cols;
+    if (view.startAddress < 0) view.startAddress = 0;
     updateGUI();
   });
   p.insertAdjacentHTML('beforeend', ' &nbsp;&nbsp;&nbsp;&nbsp; ');
@@ -99,7 +99,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
     btnEnd.innerText = view.getMaxAddress().toString(view.base);
     inputAddress.value = view.startAddress.toString(view.base);
     inputtedAddress(view.startAddress);
-    btnClearInRange.innerText = 'Clear ' + range;
+    btnSetInRange.innerText = 'Set ' + range;
 
     // Limiting buttons
     if (view.startAddress <= 0) {
@@ -135,20 +135,35 @@ function generateMemoryViewHTML(): HTMLDivElement {
     updateGUI();
   });
 
-  // Clear memory in range
+  // Set memory in range/all
   p.insertAdjacentHTML('beforeend', ' &nbsp;&nbsp; | &nbsp;&nbsp; ');
-  let btnClearInRange = document.createElement("button");
-  btnClearInRange.addEventListener('click', () => {
+  let btnSetInRange = document.createElement("button");
+  btnSetInRange.addEventListener('click', () => {
     const [min, max] = view.getAddressRange();
-    globals.cpu.writeMemoryBulk(min, max, 0);
+    const number = +inputSetValue.value;
+    globals.cpu.writeMemoryBulk(min, max, number);
   });
-  p.appendChild(btnClearInRange);
-  let btnClearAll = document.createElement("button");
-  btnClearAll.innerText = 'Clear All';
-  btnClearAll.addEventListener('click', () => {
-    globals.cpu.writeMemoryBulk(0, globals.cpu.memorySize, 0);
+  p.appendChild(btnSetInRange);
+  let btnSetAll = document.createElement("button");
+  btnSetAll.innerText = 'Set All';
+  btnSetAll.addEventListener('click', () => {
+    const number = +inputSetValue.value;
+    globals.cpu.writeMemoryBulk(0, globals.cpu.memorySize, number);
   });
-  p.appendChild(btnClearAll);
+  p.appendChild(btnSetAll);
+  p.insertAdjacentHTML('beforeend', ' &nbsp;to ');
+  let inputSetValue = document.createElement("input");
+  inputSetValue.type = "number";
+  inputSetValue.value = "0";
+  inputSetValue.addEventListener('change', () => {
+    let value = +inputSetValue.value;
+    if (isNaN(value) || !isFinite(value)) {
+      inputSetValue.value = "0";
+    } else {
+      inputSetValue.value = value.toString();
+    }
+  })
+  p.appendChild(inputSetValue);
 
   // Append MemoryViewer to screen
   wrapper.appendChild(viewDiv);
@@ -265,11 +280,11 @@ function generateRegisterViewHTML(): HTMLDivElement {
 }
 
 export function init() {
-  const target = document.getElementById('section-memory') as HTMLDivElement;
-  properties.target = target;
+  const content = document.createElement("div");
+  info.content = content;
 
   const flexContainer = document.createElement("div");
-  target.appendChild(flexContainer);
+  content.appendChild(flexContainer);
   flexContainer.classList.add('flex-container');
 
   const memoryViewHTML = generateMemoryViewHTML();
@@ -281,4 +296,19 @@ export function init() {
   registerViewHTML.classList.add('flex-child');
   registerViewHTML.insertAdjacentHTML('afterbegin', `<h2>Registers</h2>`);
   flexContainer.appendChild(registerViewHTML);
+
+  const ipIndex = globals.cpu.registerMap.indexOf("ip");
+  // Callbacks
+  globals.cpu.onMemoryWrite((startAddress, endAddress) => {
+    if (startAddress === endAddress) {
+      properties.memoryView.update(startAddress);
+    } else {
+      properties.memoryView.update();
+    }
+  });
+  globals.cpu.onRegisterWrite((index, value, cpu) => {
+    properties.registerView.update(index);
+    if (properties.updateMemoryViewOnMemoryWrite) properties.memoryView.update();
+    if (index === ipIndex) globals.tabs.run.instructionPointer.innerText = "0x" + hex(value);
+  });
 }

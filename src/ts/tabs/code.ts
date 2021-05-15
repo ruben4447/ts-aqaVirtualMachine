@@ -1,17 +1,15 @@
 import globals from "../globals";
-import { ITabProperties } from "../types/Tabs";
-import { getArrayPortion, numberToString } from "../utils/general";
+import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
+import { numberToString } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
 
-interface ICodeTabProperties extends ITabProperties {
-  assemblyCodeInput: HTMLTextAreaElement;
-  machineCode: ArrayBuffer;
-  machineCodeInput: HTMLTextAreaElement;
-}
+export const info: ITabInfo = {
+  content: undefined,
+  text: 'Code',
+  displayMulti: true,
+};
 
 export const properties: ICodeTabProperties = {
-  target: undefined,
-  text: 'Code',
   assemblyCodeInput: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
@@ -29,7 +27,6 @@ function generateAssemblyHTML(): HTMLDivElement {
   btnAssemble.innerHTML += ' Assemble Code';
   btnAssemble.addEventListener('click', () => compileAssembly());
   title.appendChild(btnAssemble);
-
   const textarea = document.createElement('textarea');
   properties.assemblyCodeInput = textarea;
   textarea.rows = 10;
@@ -51,6 +48,14 @@ function generateBinaryHTML(): HTMLDivElement {
   btnLoad.innerHTML += ' Load into Memory';
   btnLoad.addEventListener('click', () => loadMachineCodeToMemory());
   title.appendChild(btnLoad);
+
+  let btnDeassemble = document.createElement('button');
+  btnDeassemble.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/script.png' />`);
+  btnDeassemble.innerHTML += ' De-Assemble Code';
+  btnDeassemble.disabled = true; // TODO ce-compile assembly
+  btnDeassemble.addEventListener('click', () => decompileAssembly());
+  title.appendChild(btnDeassemble);
+
 
   const textarea = document.createElement('textarea');
   textarea.readOnly = true;
@@ -105,6 +110,11 @@ export function compileAssembly() {
   }
 }
 
+export function decompileAssembly() {
+  // TODO decompile assembly
+  globalThis.alert(`Not implemented.`);
+}
+
 function displayMachineCode() {
   // Machine code - array of uint8 bytes
   let machineCode = '';
@@ -143,12 +153,12 @@ export function loadMachineCodeToMemory() {
 }
 
 export function init() {
-  const target = document.getElementById('section-code') as HTMLDivElement;
-  properties.target = target;
+  const content = document.createElement('div');
+  info.content = content;
 
   const assemblyHTML = generateAssemblyHTML();
-  target.appendChild(assemblyHTML);
+  content.appendChild(assemblyHTML);
 
   const binaryHTML = generateBinaryHTML();
-  target.appendChild(binaryHTML);
+  content.appendChild(binaryHTML);
 }

@@ -1,6 +1,6 @@
-import { ICPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
+import { createCPUExecutionConfigObject, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
 import { INumberType, NumberType } from "../types/general";
-import { getNumTypeInfo } from "../utils/general";
+import { getNumTypeInfo, hex, numberToString } from "../utils/general";
 
 export class CPUError extends Error {
   constructor(message: string) {
@@ -14,16 +14,16 @@ export class CPU {
   private __registers: ArrayBuffer;
   private _registers: DataView;
   private _ip: number; // As the Instruction Pointer is needed so often, this stord the index of IP in the register ArrayBuffer
-  public readonly memorySize = 0xFFF;
+  public readonly memorySize: number;
   private __memory: ArrayBuffer;
   private _memory: DataView;
   public readonly numType: INumberType;
   private _callbackMemoryWrite: MemoryWriteCallback;
   private _callbackRegisterWrite: RegisterWriteCallback;
-  public safeNull: boolean = true; // SafeNull - halt execution on NULL instruction, or bubble forward?
+  public executionConfig: ICPUExecutionConfig;
 
 
-  constructor(instructionSet: ICPUInstructionSet, numType: NumberType = "float64") {
+  constructor(instructionSet: ICPUInstructionSet, memorySize: number = 0xfff, numType: NumberType = "float64") {
     this.instructionSet = instructionSet;
 
     this.numType = getNumTypeInfo(numType);
@@ -33,8 +33,11 @@ export class CPU {
     this.__registers = new ArrayBuffer(this.registerMap.length * this.numType.bytes);
     this._registers = new DataView(this.__registers);
 
+    this.memorySize = memorySize;
     this.__memory = new ArrayBuffer(this.memorySize * this.numType.bytes);
     this._memory = new DataView(this.__memory);
+
+    this.executionConfig = createCPUExecutionConfigObject();
   }
 
   /** Get index of register in register array. Return NaN is does not exist. */
@@ -132,6 +135,11 @@ export class CPU {
     this._callbackRegisterWrite = cb;
   }
 
+  /** Transform number to hexadecimal in out numbering format */
+  public toHex(n: number): string {
+    return numberToString(this.numType, n, 16);
+  }
+
 
   /** Get next word in memory, and increment IP */
   public fetch(): number {
@@ -142,43 +150,69 @@ export class CPU {
   }
 
   /** Execute command associated with <opcode>. Return continue execution? */
-  public execute(opcode: number): boolean {
+  public execute(opcode: number, info: IExecuteRecord): boolean {
+    let continueExec = true;
+
     switch (opcode) {
       case this.instructionSet.NULL:
-        return !this.safeNull;
+        if (this.executionConfig.commentary) info.text = this.executionConfig.haltOnNull ? 'NULL: halted programme execution' : 'Skip NULL instruction';
+        if (this.executionConfig.detail) info.opcodeMnemonic = "NULL";
+        continueExec = !this.executionConfig.haltOnNull;
+        break;
       case this.instructionSet.HALT:
-        return false;
+        if (this.executionConfig.commentary) info.text = 'Halt programme execution';
+        if (this.executionConfig.detail) info.opcodeMnemonic = "HALT";
+        continueExec = false;
+        break;
       case this.instructionSet.LDR: {
-        let register = this.fetch(), address = this.fetch();
+        const register = this.fetch(), address = this.fetch();
+        const addressValue = this.readMemory(address);
+        info.args = [register, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Load memory address 0x${this.toHex(address)} (0x${this.toHex(addressValue)}) to register ${this.registerMap[register]}`;
+        }
+        if (this.executionConfig.detail) {
+          info.opcodeMnemonic = "LDR";
+          info.argStrs = ["register: " + this.registerMap[register], "address: 0x" + hex(address)];
+        }
         this.writeRegister(register, this.readMemory(address));
         break;
       }
       default:
+        info.termination = true;
         throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);
     }
-    return true;
+    info.termination = !continueExec;
+    return continueExec;
   }
 
   /** One fetch-execute cycle. Return whether to continue or not. */
-  public cycle(): boolean {
+  public cycle(info: IExecuteRecord): boolean {
     const ip = this.readRegister(this._ip);
+    info.ip = ip;
     try {
       let opcode: number;
       try {
         opcode = this.fetch();
+        info.opcode = opcode;
       } catch (e) {
-        throw new Error(`cycle: cannot fetch next word in memory:\n${e}`);
+        const error = new Error(`cycle: cannot fetch next word in memory:\n${e}`);
+        info.error = error;
+        throw error;
       }
 
       let cont: boolean;
       try {
-        cont = this.execute(opcode);
+        cont = this.execute(opcode, info);
       } catch (e) {
-        throw new Error(`cycle: failed to execute opcode 0x${opcode.toString(16)}:\n${e}`);
+        const error = new Error(`cycle: failed to execute opcode 0x${opcode.toString(16)}:\n${e}`);
+        info.error = error;
+        throw error;
       }
       return cont;
     } catch (e) {
-      this.writeRegister(this._ip, ip); // Reset instruction pointer
+      // this.writeRegister(this._ip, ip); // Reset instruction pointer
+      info.termination = true;
       throw new Error(`cycle: failed to complete CPU cycle where ip = 0x${ip}:\n${e}`);
     }
   }

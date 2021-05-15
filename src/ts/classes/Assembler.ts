@@ -199,8 +199,8 @@ export class Assembler {
     // Check if there is a sub-instruction with that signature
     for (let subinstruction in this._imap[instruction]) {
       if (this._imap[instruction].hasOwnProperty(subinstruction)) {
-        let signature = this._imap[instruction][subinstruction];
-        if (matchesTypeSignature(line.args, signature)) {
+        const commandInfo = this._imap[instruction][subinstruction];
+        if (matchesTypeSignature(line.args, commandInfo.args)) {
           line.instruction = subinstruction;
           break;
         } else {

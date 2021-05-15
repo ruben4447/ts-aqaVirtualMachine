@@ -6,3 +6,40 @@ export interface ICPUInstructionSet {
 
 export type MemoryWriteCallback = (startAddress: number, endAddress: number, cpu: CPU) => void;
 export type RegisterWriteCallback = (index: number, value: number, cpu: CPU) => void;
+
+export interface IExecuteRecord {
+  ip: number; // Instruction pointer value when command was run
+  opcode: number; // Opcode
+  opcodeMnemonic: string; // Opcode mnemonic
+  args: number[]; // Array of arguments
+  argStrs: string[];
+  text: string;
+  error?: Error;
+  termination: boolean; // Terminate execution?
+}
+
+export function createExecuteRecordObject(): IExecuteRecord {
+  return {
+    ip: undefined,
+    opcode: undefined,
+    opcodeMnemonic: undefined,
+    args: [],
+    argStrs: [],
+    text: '',
+    termination: false,
+  };
+}
+
+export interface ICPUExecutionConfig {
+  haltOnNull: boolean; // HALT execution on NULL?
+  detail: boolean; // Show info of command feedback e.g. mnemonic, halt reason...
+  commentary: boolean; // Provide text description of command
+}
+
+export function createCPUExecutionConfigObject(): ICPUExecutionConfig {
+  return {
+    haltOnNull: true,
+    detail: true,
+    commentary: true,
+  };
+}

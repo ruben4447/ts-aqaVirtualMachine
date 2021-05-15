@@ -19,14 +19,18 @@ export enum AssemblyLineType {
   Instruction,
 };
 
-/** Interface describing a command */
-export interface IAssemblerInstructionInfo {
-  [instruction: string]: Array<AssemblerType>;
-};
-
 /** Interface describing Assembler instruction map */
 export interface IAssemblerInstructionMap {
   [instruction: string]: IAssemblerInstructionInfo;
+};
+
+/** Interface describing a command e.g. ADD */
+export interface IAssemblerInstructionInfo {
+  [instruction: string]: {
+    args: Array<AssemblerType>; // Argument types
+    desc: string; // Description
+    isAQA: boolean; // Is in the AQA instruction set?
+  };
 };
 
 /** Describes a line of tokens in assembly */

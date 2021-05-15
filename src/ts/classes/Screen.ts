@@ -18,6 +18,7 @@ export class CustomScreen {
   private _foreground: ScreenColour;
   private _background: ScreenColour;
   private _savedStates: IScreenState[] = [];
+  private _padding: number = 0; // Text padding
   public font: Font;
 
   constructor(wrapper: HTMLDivElement) {
@@ -52,6 +53,9 @@ export class CustomScreen {
   public getBackground(): ScreenColour { return this._background; }
   public setBackground(value: ScreenColour): CustomScreen { this._background = value; return this; }
 
+  public getPadding(): number { return this._padding; }
+  public setPadding(value: number): CustomScreen { this._padding = value; return this; }
+
   /** Write string to screen. Move cursor position to end of string? */
   writeString(string: string, moveCursorPos = true, maxWidth?: number) {
     const ctx = this._ctx, metrics = getTextMetrics(ctx, string);
@@ -59,7 +63,7 @@ export class CustomScreen {
     if (this._background !== null) {
       ctx.beginPath();
       ctx.fillStyle = this._background;
-      ctx.rect(this.x, this.y, metrics.width, metrics.height);
+      ctx.rect(this.x - this._padding, this.y - this._padding, metrics.width + this._padding * 2, metrics.height + this._padding * 2);
       ctx.fill();
     }
     // Fill text

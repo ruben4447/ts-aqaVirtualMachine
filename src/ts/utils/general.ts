@@ -90,7 +90,7 @@ export function getNumTypeInfo(type: NumberType): INumberType {
   return { type, array, getMethod, setMethod, bytes };
 }
 
-export const hex = (n: number, len: number) => n.toString(16).toUpperCase().padStart(len, '0');
+export const hex = (n: number, len: number = 0) => (+n).toString(16).toUpperCase().padStart(len, '0');
 
 export function numberToString(type: INumberType, n: number, base: number): string {
   const maxLength = (0xff).toString(base).length;
@@ -149,4 +149,14 @@ export function arrayToBuffer(array: number[], type: INumberType): ArrayBuffer {
     dview[type.setMethod](offset, array[i]);
   }
   return buffer;
+}
+
+/** Try to remove child from parent, but doesn't throw error on failure. */
+export function removeChild(parent: HTMLElement, child: HTMLElement): boolean {
+  try {
+    parent.removeChild(child);
+    return true;
+  } catch {
+    return false;
+  }
 }

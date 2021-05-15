@@ -1,13 +1,23 @@
 import { ITabMap } from "../types/Tabs";
+import { removeChild } from "../utils/general";
 
 export class Tabs {
-  private _target: HTMLDivElement; // Wrapper for tab controls
+  private _wrapper: HTMLDivElement; // Wrapper for tabs
+  private _tabContainer: HTMLDivElement;
   private _map: ITabMap;
   private _openTab: string;
-  private _multiContent: HTMLDivElement;
+  private _multiContentContainer: HTMLDivElement;
+  private _multiContent: HTMLDivElement | undefined;
 
-  constructor(target: HTMLDivElement, map: ITabMap) {
-    this._target = target;
+  /**
+   * @param target - Where to place all the tabs and the controller
+   * @param map - Object of tab information
+   * @param multiContent - Content which may be displayed for multiple tabs (dictated by .displayMulti: <boolean>)
+   */
+  constructor(target: HTMLDivElement, map: ITabMap, multiContent?: HTMLDivElement) {
+    this._wrapper = target;
+    this._multiContent = multiContent;
+
     for (let name in map) {
       if (map.hasOwnProperty(name)) {
         if (!(map[name].content instanceof HTMLElement)) throw new TypeError(`Tabs: name '${name}' does not map to an html element -> ${map[name].content}`);
@@ -15,7 +25,16 @@ export class Tabs {
     }
     this._map = map;
 
-    this._target.appendChild(this.generateController());
+    // Container for tabs
+    this._tabContainer = document.createElement('div');
+    this._tabContainer.classList.add('tab-container');
+    this._wrapper.appendChild(this.generateController());
+    this._wrapper.appendChild(this._tabContainer);
+
+    // Container for multi-content
+    this._multiContentContainer = document.createElement('div');
+    this._multiContentContainer.classList.add('tab-multi-content');
+    this._wrapper.appendChild(this._multiContentContainer);
 
     this.closeAll();
   }
@@ -42,26 +61,22 @@ export class Tabs {
     return div;
   }
 
-  /** Multi Content is content which may be displayed for multiple tabs. Whether it is displayed or not is dependant upon tab settings (property .displayMulti) */
-  public setMultiContent(el: HTMLDivElement) {
-    this._multiContent = el;
-    if (!this._openTab || (this._openTab && !this._map[this._openTab].displayMulti)) el.style.display = "none";
-  }
-
   public open(name: string) {
+    if (!this._map.hasOwnProperty(name)) throw new Error(`#<Tabs>.open: unknown tab reference '${name}'`);
     if (this._openTab) this.close(this._openTab);
 
     this._openTab = name;
     this._map[this._openTab].btn.dataset.open = "true";
-    this._map[this._openTab].content.style.display = 'block';
-    if (this._map[this._openTab].displayMulti) this._multiContent.style.display = 'block';
+    if (this._map[this._openTab].displayMulti) this._multiContentContainer.appendChild(this._multiContent);
+    this._tabContainer.appendChild(this._map[this._openTab].content); // Add tab content to document
   }
 
   public close(name: string) {
+    if (!this._map.hasOwnProperty(name)) throw new Error(`#<Tabs>.open: unknown tab reference '${name}'`);
     if (this._openTab === name) this._openTab = null;
-    this._multiContent.style.display = 'none';
+    removeChild(this._multiContentContainer, this._multiContent);// Remove multi-content
     this._map[name].btn.dataset.open = "false";
-    this._map[name].content.style.display = 'none';
+    removeChild(this._tabContainer, this._map[name].content);// Remove tab content from document
   }
 
   public toggle(name: string) {
@@ -73,9 +88,10 @@ export class Tabs {
   }
 
   public closeAll() {
+    removeChild(this._multiContentContainer, this._multiContent);
     for (let name in this._map) {
       if (this._map.hasOwnProperty(name)) {
-        this._map[name].content.style.display = 'none';
+        removeChild(this._tabContainer, this._map[name].content);
         this._map[name].btn.dataset.open = "false";
       }
     }

@@ -13,3 +13,18 @@ body {
 .flex-child {
   padding: 0 20px;
 }
+
+table,
+tr,
+th,
+td {
+  border: 1px solid #000;
+}
+
+thead th {
+  background-color: lightgrey;
+}
+
+table {
+  border-collapse: collapse;
+}

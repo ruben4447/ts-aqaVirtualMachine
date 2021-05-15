@@ -126,8 +126,9 @@ export class MemoryView {
   }
 
   private _renderAddress(address: number) {
-    const row = Math.floor(address / this._rows);
-    const col = address - (row * this._rows);
+    const relAddress = address - this.startAddress; // Address relative to where we are in the view
+    const row = Math.floor(relAddress / this._rows);
+    const col = relAddress - (row * this._rows);
     let x = (this._cache.rowTitleWidth + this._cache.xPad) + (col * this._cache.xSpacing);
     let y = this._cache.ySpacing + (row * this._cache.ySpacing);
     this.screen.x = x;

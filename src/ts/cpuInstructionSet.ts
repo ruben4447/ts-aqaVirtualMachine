@@ -1,3 +1,4 @@
+import globals from "./globals";
 import { ICPUInstructionSet } from "./types/CPU";
 
 export const cpuInstructionSet: ICPUInstructionSet = {
@@ -6,3 +7,5 @@ export const cpuInstructionSet: ICPUInstructionSet = {
   STR: 0x11,
   HALT: 0xff,
 };
+
+globals.cpuInstructionSet = Object.freeze(cpuInstructionSet);

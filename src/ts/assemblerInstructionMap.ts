@@ -1,39 +1,93 @@
-import { Assembler } from "./classes/Assembler";
+import globals from "./globals";
 import { AssemblerType, IAssemblerInstructionMap } from "./types/Assembler";
 
 /** For assembler; list every instruction */
 export const assemblerInstructionMap: IAssemblerInstructionMap = {
   NULL: {
-    NULL: [], // Depending on #<CPU>.safeMode, either skip to next instruction or act as HALT
+    NULL: {
+      args: [],
+      desc: "Skips to next instruction (or acts as HALT is in safe mode)",
+      isAQA: false,
+    }
   },
 
   LDR: {
-    LDR: [AssemblerType.Register, AssemblerType.Address], // Load the value stored at [address] into register [register]
+    LDR: {
+      args: [AssemblerType.Register, AssemblerType.Address],
+      desc: "Load the value stored at [address] into register [register]",
+      isAQA: true,
+    },
   },
 
   STR: {
-    STR: [AssemblerType.Register, AssemblerType.Address], // Store the value that is in register [register] to address [address]
+    STR: {
+      args: [AssemblerType.Register, AssemblerType.Address],
+      desc: "Store the value that is in register[register] to address [address]",
+      isAQA: true,
+    },
   },
 
   ADD: {
-    ADD_REG: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register], // [register2] + [register3] and store in [register1]
-    ADD_ADDR: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address], // [register2] + value at [address] and store in [register1]
-    ADD_CONST: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant], // [register2] + [constant] and store in [register1]
+    ADD_REG: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+      desc: "[register2] + [register3] and store in [register1]",
+      isAQA: true,
+    },
+    ADD_ADDR: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+      desc: "[register2] + value at [address] and store in [register1]",
+      isAQA: true,
+    },
+    ADD_CONST: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+      desc: "[register2] + [constant] and store in [register1]",
+      isAQA: true,
+    },
   },
 
   SUB: {
-    SUB_REG: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register], // [register2] - [register3] and store in [register1]
-    SUB_ADDR: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address], // [register2] - value at [address] and store in [register1]
-    SUB_CONST: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant], // [register2] - [constant] and store in [register1]
+    SUB_REG: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+      desc: "[register2] - [register3] and store in [register1]",
+      isAQA: true,
+    },
+    SUB_ADDR: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+      desc: "[register2] - value at [address] and store in [register1]",
+      isAQA: true,
+    },
+    SUB_CONST: {
+      args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+      desc: "[register2] -[constant] and store in [register1]",
+      isAQA: true,
+    },
   },
 
   MOV: {
-    MOV_REG: [AssemblerType.Register, AssemblerType.Register], // Copy the value in [register2] to [register1]
-    MOV_ADDR: [AssemblerType.Register, AssemblerType.Address], // Copy the value at address [address] to [register]
-    MOV_CONST: [AssemblerType.Register, AssemblerType.Constant], // Move value [constant] in to [register]
+    MOV_REG: {
+      args: [AssemblerType.Register, AssemblerType.Register],
+      desc: "Copy the value in [register2] to [register1]",
+      isAQA: true,
+    },
+    MOV_ADDR: {
+      args: [AssemblerType.Register, AssemblerType.Address],
+      desc: "Copy the value at address [address] to [register]",
+      isAQA: true,
+    },
+    MOV_CONST: {
+      args: [AssemblerType.Register, AssemblerType.Constant],
+      desc: "Move value [constant] in to [register]",
+      isAQA: true,
+    },
   },
 
   HALT: {
-    HALT: [], // Stop execution (return false from execute method)
+    HALT: {
+      args: [],
+      desc: "Stop execution",
+      isAQA: true,
+    },
   },
 };
+
+globals.assemblerInstructionMap = Object.freeze(assemblerInstructionMap);
