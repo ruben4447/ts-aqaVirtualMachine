@@ -1,4 +1,5 @@
 import globals from "../globals";
+import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
 import { numberToString } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
@@ -11,8 +12,10 @@ export const info: ITabInfo = {
 
 export const properties: ICodeTabProperties = {
   assemblyCodeInput: undefined,
+  partialTranslatedInput: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
+  insertHalt: true,
 };
 
 function generateAssemblyHTML(): HTMLDivElement {
@@ -27,8 +30,37 @@ function generateAssemblyHTML(): HTMLDivElement {
   btnAssemble.innerHTML += ' Assemble Code';
   btnAssemble.addEventListener('click', () => compileAssembly());
   title.appendChild(btnAssemble);
+
+  let p = document.createElement("p");
+  wrapper.appendChild(p);
+  p.insertAdjacentHTML('beforeend', 'Insert HALT at end of program ');
+  const inputInsertHalt = document.createElement("input");
+  inputInsertHalt.type = "checkbox";
+  inputInsertHalt.checked = properties.insertHalt;
+  inputInsertHalt.addEventListener('change', () => properties.insertHalt = inputInsertHalt.checked);
+  p.appendChild(inputInsertHalt);
+
   const textarea = document.createElement('textarea');
   properties.assemblyCodeInput = textarea;
+  textarea.rows = 10;
+  textarea.cols = 100;
+  wrapper.appendChild(textarea);
+
+  return wrapper;
+}
+
+/** Partial translation between assembly and machine code */
+function generatePartialHTML() {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('input-partial-wrapper');
+
+  const title = document.createElement('h2');
+  wrapper.appendChild(title);
+  title.insertAdjacentHTML('beforeend', 'Partial Translation ');
+
+  const textarea = document.createElement('textarea');
+  properties.partialTranslatedInput = textarea;
+  textarea.readOnly = true;
   textarea.rows = 10;
   textarea.cols = 100;
   wrapper.appendChild(textarea);
@@ -69,12 +101,13 @@ function generateBinaryHTML(): HTMLDivElement {
 
 /** Compile assembly code */
 export function compileAssembly() {
-  const code = properties.assemblyCodeInput.value;
+  let code = properties.assemblyCodeInput.value;
+  if (properties.insertHalt) code += '\nHALT';
 
   let buffer: ArrayBuffer, error: Error;
   globals.output.reset();
   try {
-    buffer = globals.assembler.parse(code);
+    globals.assembler.parse(code);
   } catch (e) {
     console.error(e);
     error = e;
@@ -89,6 +122,8 @@ export function compileAssembly() {
       writeMultilineString(S, error.message);
     });
   } else {
+    buffer = globals.assembler.getBytes();
+
     globals.output.reset();
     withinState(globals.output, S => {
       S.setForeground('lime');
@@ -106,6 +141,7 @@ export function compileAssembly() {
     });
 
     properties.machineCode = buffer;
+    displayPartialTranslation();
     displayMachineCode();
   }
 }
@@ -113,6 +149,22 @@ export function compileAssembly() {
 export function decompileAssembly() {
   // TODO decompile assembly
   globalThis.alert(`Not implemented.`);
+}
+
+function displayPartialTranslation() {
+  const lines = globals.assembler.getAST();
+  let text = '';
+  for (const line of lines) {
+    if (line.type === AssemblyLineType.Instruction) {
+      const info = line as IAssemblyInstructionLine;
+      text += `[${info.instruction}] ${info.opcode}`;
+      if (info.args.length > 0) {
+        text += ` : ${info.args.map(x => `<${AssemblerType[x.type].toLowerCase()}> ${x.num}`).join(', ')}`;
+      }
+      text += '\n';
+    }
+  }
+  properties.partialTranslatedInput.value = text;
 }
 
 function displayMachineCode() {
@@ -156,9 +208,7 @@ export function init() {
   const content = document.createElement('div');
   info.content = content;
 
-  const assemblyHTML = generateAssemblyHTML();
-  content.appendChild(assemblyHTML);
-
-  const binaryHTML = generateBinaryHTML();
-  content.appendChild(binaryHTML);
+  content.appendChild(generateAssemblyHTML());
+  content.appendChild(generatePartialHTML());
+  content.appendChild(generateBinaryHTML());
 }

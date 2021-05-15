@@ -34,8 +34,9 @@ function generateMemoryViewHTML(): HTMLDivElement {
   /// Edit memory
   let p = document.createElement("p"), addressViewing: number;
   wrapper.appendChild(p);
+  /** Read value of given address */
   const inputtedAddress = (address: number | string) => {
-    const addr = typeof address === 'string' ? parseInt(address, view.base) : Math.floor(address);
+    const addr = typeof address === 'string' ? parseInt(address, parseInt(selectBase.value)) : Math.floor(address);
     if (isNaN(addr)) {
       inputtedAddress(0);
     } else {
@@ -45,6 +46,13 @@ function generateMemoryViewHTML(): HTMLDivElement {
     }
   };
   p.insertAdjacentHTML('beforeend', 'Address ');
+  let selectBase = document.createElement('select');
+  selectBase.insertAdjacentHTML('beforeend', `<option value='16' title='Hexadecimal'>0x</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='10' title='Decimal'>0d</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='2' title='Binary'>0b</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='8' title='Octal'>0o</option>`);
+  selectBase.addEventListener('change', () => inputtedAddress(inputAddress.value));
+  p.appendChild(selectBase);
   let inputAddress = document.createElement("input");
   inputAddress.type = "text";
   inputAddress.value = "0";
@@ -52,14 +60,14 @@ function generateMemoryViewHTML(): HTMLDivElement {
   p.appendChild(inputAddress);
   p.insertAdjacentHTML('beforeend', ' &equals; ');
   let inputAddressValue = document.createElement("input");
-  inputAddressValue.type = "text";
+  inputAddressValue.type = "number";
   inputAddressValue.addEventListener('change', () => {
+    // Write to address
     const decimal = +inputAddressValue.value;
     if (!isNaN(decimal) && isFinite(decimal)) {
       globals.cpu.writeMemory(addressViewing, decimal);
-    } else {
-      inputtedAddress(inputAddress.value); // Reset
     }
+    inputtedAddress(inputAddress.value); // Reset
   });
   p.appendChild(inputAddressValue);
   inputtedAddress(0);
@@ -272,6 +280,18 @@ function generateRegisterViewHTML(): HTMLDivElement {
     }
   });
   p.appendChild(inputRegisterValue);
+
+  // Reset registers
+  p = document.createElement("p");
+  wrapper.appendChild(p);
+  const btnClear = document.createElement("button");
+  btnClear.innerText = 'Clear Registers';
+  p.appendChild(btnClear);
+  btnClear.addEventListener('click', () => {
+    for (let r = 0; r < globals.cpu.registerMap.length; r++) {
+      globals.cpu.writeRegister(r, 0);
+    }
+  });
 
   selectedRegister(0);
   wrapper.appendChild(viewWrapper);

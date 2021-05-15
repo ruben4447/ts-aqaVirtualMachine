@@ -2,6 +2,7 @@ import type MemoryView from "../classes/MemoryView";
 import type Popup from "../classes/Popup";
 import type RegisterView from "../classes/RegisterView";
 import type CustomScreen from "../classes/Screen";
+import { IExecuteRecord } from "./CPU";
 
 export interface ITabMap {
   [name: string]: ITabInfo;
@@ -17,8 +18,10 @@ export interface ITabInfo {
 /** Properties for tab:"code" */
 export interface ICodeTabProperties {
   assemblyCodeInput: HTMLTextAreaElement;
+  partialTranslatedInput: HTMLTextAreaElement;
   machineCode: ArrayBuffer;
   machineCodeInput: HTMLTextAreaElement;
+  insertHalt: boolean;
 }
 
 /** Properties for tab:"memory" */
@@ -36,6 +39,8 @@ export interface IRunTabProperties {
   feedbackScreenDimensions: [number, number],
   instructionPointer: HTMLElement;
   optionsPopup: Popup;
+  executionHistory: IExecuteRecord[];
+  historyTable: HTMLTableElement;
 }
 
 /** Properties for tab:"instruction set" */

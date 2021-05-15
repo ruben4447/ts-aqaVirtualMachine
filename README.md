@@ -8,15 +8,19 @@ Virtual machine based on the AQA instruction set and assembly language
 - **Output** - have a virtual screen which the processor can output to (add custom commands to allow printing)
 
 ## Instruction Sets
-Instruction sets list what commands may be used and map it to an opcode that the 'CPU' understands. 
+Instruction sets list what commands may be used and map it to an opcode that the 'CPU' understands.
 
-There are two instruction sets that I use - one for the assembler (`src/ts/assemblerInstructionMap.ts`), which maps mnemonics to associated commands depending on their arguments, and one for the cpu (`src/ts/cpuInstructionSet.ts`), which simply maps instructions to their opcode.
+The official A-Level AQA Assembly Language specification: [https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF](https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF)
 
-I am to have a tab which lists this for help purposes
+The instruction set is at `src/ts/instructionSet.ts`. It contains each sub-instruction; the property `.mnemonic` is what one would type in the assembly code input. This "parent" mnemonic is mapped to this specific mnemonic via the argument signature (the `.args` property).
+
+The `Instruction Set` Tab shows this.
 
 ## CPU
 The CPU has an ArrayBuffer for registers and for memory, having the ability to read and write from either of these.
+
 Both memory and the registers depend on the CPUs *numerical type* - this is tored in `#<CPU>.numType` and is immutable. This dictates what format data is get/set from DataViews. This is settable during CPU construction and should not be changed (unexpected results may arise).
+
 Writing to either memory or registers will trigger a respective callback. This callback will not influence the writing process.
 
 **NB typed arrays are NOT used. Typed arrays have endianness which may get confusing when transferring between types and DataViews. As such, only DataViews and their get/set methods are used**

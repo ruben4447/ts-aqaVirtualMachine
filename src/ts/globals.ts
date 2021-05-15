@@ -4,8 +4,7 @@ import type MemoryView from "./classes/MemoryView";
 import type RegisterView from "./classes/RegisterView";
 import type CustomScreen from "./classes/Screen";
 import type Tabs from "./classes/Tabs";
-import type { IAssemblerInstructionMap } from "./types/Assembler";
-import type { ICPUInstructionSet } from "./types/CPU";
+import type { IInstructionSet } from "./types/Assembler";
 import type { ICodeTabProperties, IInstructionSetProperties, IMemoryTabProperties, IRunTabProperties } from "./types/Tabs";
 
 interface IGlobals {
@@ -21,8 +20,7 @@ interface IGlobals {
   },
   memoryView: MemoryView;
   registerView: RegisterView;
-  assemblerInstructionMap: IAssemblerInstructionMap;
-  cpuInstructionSet: ICPUInstructionSet;
+  instructionSet: IInstructionSet;
 };
 
 const globals: IGlobals = {
@@ -38,8 +36,7 @@ const globals: IGlobals = {
   },
   memoryView: undefined,
   registerView: undefined,
-  assemblerInstructionMap: undefined,
-  cpuInstructionSet: undefined,
+  instructionSet: undefined,
 };
 
 globalThis.globals = globals;

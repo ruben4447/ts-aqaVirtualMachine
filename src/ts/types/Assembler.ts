@@ -20,17 +20,17 @@ export enum AssemblyLineType {
 };
 
 /** Interface describing Assembler instruction map */
-export interface IAssemblerInstructionMap {
-  [instruction: string]: IAssemblerInstructionInfo;
+export interface IInstructionSet {
+  [instruction: string]: IInstructionInfo;
 };
 
 /** Interface describing a command e.g. ADD */
-export interface IAssemblerInstructionInfo {
-  [instruction: string]: {
-    args: Array<AssemblerType>; // Argument types
-    desc: string; // Description
-    isAQA: boolean; // Is in the AQA instruction set?
-  };
+export interface IInstructionInfo {
+  mnemonic: string; // Mnemonic this is represented by in assembly code
+  opcode: number,
+  args: Array<AssemblerType>; // Argument types
+  desc: string; // Description
+  isAQA: boolean; // Is in the AQA instruction set?
 };
 
 /** Describes a line of tokens in assembly */
@@ -41,6 +41,7 @@ export interface IAssemblyLine {
 /** Represent an assembly instruction line */
 export interface IAssemblyInstructionLine extends IAssemblyLine {
   instruction: string;
+  opcode: number;
   args: Array<IAssemblerToken>;
 }
 

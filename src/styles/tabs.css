@@ -28,3 +28,16 @@ section.tab-content {
   border: 1px solid black;
   padding: 3px;
 }
+
+.exec-history-container {
+  overflow-y: scroll;
+  max-height: 300px;
+  border: 1px solid #000;
+}
+
+/* Make top row in <thead/> sticky */
+.exec-history-container thead tr:nth-child(1) th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}

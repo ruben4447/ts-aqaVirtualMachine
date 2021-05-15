@@ -1,6 +1,6 @@
-import { createCPUExecutionConfigObject, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
+import { createCPUExecutionConfigObject, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
 import { INumberType, NumberType } from "../types/general";
-import { getNumTypeInfo, hex, numberToString } from "../utils/general";
+import { getNumTypeInfo, hex, numberToString, reverseKeyValues } from "../utils/general";
 
 export class CPUError extends Error {
   constructor(message: string) {
@@ -10,6 +10,7 @@ export class CPUError extends Error {
 
 export class CPU {
   public readonly instructionSet: ICPUInstructionSet;
+  private readonly reversedInstructionSet: IReversedCPUInstructionSet;
   public readonly registerMap: string[]; // Map register names to index positions
   private __registers: ArrayBuffer;
   private _registers: DataView;
@@ -25,6 +26,7 @@ export class CPU {
 
   constructor(instructionSet: ICPUInstructionSet, memorySize: number = 0xfff, numType: NumberType = "float64") {
     this.instructionSet = instructionSet;
+    this.reversedInstructionSet = reverseKeyValues(instructionSet);
 
     this.numType = getNumTypeInfo(numType);
 
@@ -39,6 +41,11 @@ export class CPU {
 
     this.executionConfig = createCPUExecutionConfigObject();
   }
+
+  public getOpcode(mnemonic: string): number { return this.instructionSet[mnemonic]; }
+  public getMnemonic(opcode: number): string { return this.reversedInstructionSet[opcode]; }
+
+  // #region Registers
 
   /** Get index of register in register array. Return NaN is does not exist. */
   public getRegisterIndexFromName(name: string): number {
@@ -61,6 +68,9 @@ export class CPU {
     if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(index, value, this);
   }
 
+  // #endregion
+
+  // #region Memory
   /** Is this a valid memory address? */
   public isValidAddress(address: number): boolean { return address >= 0 && address < this.memorySize; }
 
@@ -126,6 +136,7 @@ export class CPU {
       throw new Error(`writeMemoryBulk: unable to write value 0x${value.toString(16)} to addresses ranging 0x${start.toString(16)} to 0x${end.toString(16)}:\n${e}`);
     }
   }
+  //#endregion
 
   public onMemoryWrite(cb: MemoryWriteCallback): void {
     this._callbackMemoryWrite = cb;
@@ -155,27 +166,99 @@ export class CPU {
 
     switch (opcode) {
       case this.instructionSet.NULL:
+        // NULL
         if (this.executionConfig.commentary) info.text = this.executionConfig.haltOnNull ? 'NULL: halted programme execution' : 'Skip NULL instruction';
-        if (this.executionConfig.detail) info.opcodeMnemonic = "NULL";
         continueExec = !this.executionConfig.haltOnNull;
         break;
       case this.instructionSet.HALT:
+        // HALT
         if (this.executionConfig.commentary) info.text = 'Halt programme execution';
-        if (this.executionConfig.detail) info.opcodeMnemonic = "HALT";
         continueExec = false;
         break;
       case this.instructionSet.LDR: {
+        // LDR register address
         const register = this.fetch(), address = this.fetch();
         const addressValue = this.readMemory(address);
         info.args = [register, address];
         if (this.executionConfig.commentary) {
           info.text = `Load memory address 0x${this.toHex(address)} (0x${this.toHex(addressValue)}) to register ${this.registerMap[register]}`;
         }
-        if (this.executionConfig.detail) {
-          info.opcodeMnemonic = "LDR";
-          info.argStrs = ["register: " + this.registerMap[register], "address: 0x" + hex(address)];
-        }
         this.writeRegister(register, this.readMemory(address));
+        break;
+      }
+      case this.instructionSet.ADD_REG: {
+        // ADD register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        const result = register2val + register3val;
+        info.args = [register1, register2, register3];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} + register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} + 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.ADD_ADDR: {
+        // ADD register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readMemory(address);
+        const result = register2val + addressVal;
+        info.args = [register1, register2, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} + address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} + 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.ADD_CONST: {
+        // ADD register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        const result = register2val + constant;
+        info.args = [register1, register2, constant];
+        if (this.executionConfig.commentary) {
+          const constantHex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} + 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} + 0x${constantHex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      // START
+      case this.instructionSet.SUB_REG: {
+        // SUB register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        const result = register2val - register3val;
+        info.args = [register1, register2, register3];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} - register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} - 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.SUB_ADDR: {
+        // SUB register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readMemory(address);
+        const result = register2val - addressVal;
+        info.args = [register1, register2, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} - address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} - 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.SUB_CONST: {
+        // SUB register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        const result = register2val - constant;
+        info.args = [register1, register2, constant];
+        if (this.executionConfig.commentary) {
+          const constantHex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} - 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} - 0x${constantHex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
         break;
       }
       default:
@@ -194,12 +277,13 @@ export class CPU {
       let opcode: number;
       try {
         opcode = this.fetch();
-        info.opcode = opcode;
       } catch (e) {
         const error = new Error(`cycle: cannot fetch next word in memory:\n${e}`);
         info.error = error;
+        info.text = e.message;
         throw error;
       }
+      info.opcode = opcode;
 
       let cont: boolean;
       try {
@@ -207,6 +291,7 @@ export class CPU {
       } catch (e) {
         const error = new Error(`cycle: failed to execute opcode 0x${opcode.toString(16)}:\n${e}`);
         info.error = error;
+        info.text = e.message;
         throw error;
       }
       return cont;

@@ -32,53 +32,45 @@ export const splitString = (string: string, nSize: number) => string.match(new R
 
 /** Given number type, return information */
 export function getNumTypeInfo(type: NumberType): INumberType {
-  let array: TypedArray, getMethod: DataviewGetMethod, setMethod: DataviewSetMethod, bytes: number;
+  let getMethod: DataviewGetMethod, setMethod: DataviewSetMethod, bytes: number;
 
   switch (type) {
     case "int8":
-      array = Int8Array;
       getMethod = "getInt8";
       setMethod = "setInt8";
       bytes = 1;
       break;
     case "uint8":
-      array = Uint8Array;
       getMethod = "getUint8";
       setMethod = "setUint8";
       bytes = 1;
       break;
     case "int16":
-      array = Int16Array;
       getMethod = "getInt16";
       setMethod = "setInt16";
       bytes = 2;
       break;
     case "uint16":
-      array = Uint16Array;
       getMethod = "getUint16";
       setMethod = "setUint16";
       bytes = 2;
       break;
     case "int32":
-      array = Int32Array;
       getMethod = "getInt32";
       setMethod = "setInt32";
       bytes = 4;
       break;
     case "uint32":
-      array = Uint32Array;
       getMethod = "getUint32";
       setMethod = "setUint32";
       bytes = 4;
       break;
     case "float32":
-      array = Float32Array;
       getMethod = "getFloat32";
       setMethod = "setFloat32";
       bytes = 4;
       break;
     case "float64":
-      array = Float64Array;
       getMethod = "getFloat64";
       setMethod = "setFloat64";
       bytes = 8;
@@ -87,8 +79,10 @@ export function getNumTypeInfo(type: NumberType): INumberType {
       throw new TypeError(`Unknown numeric type '${type}'`);
   }
 
-  return { type, array, getMethod, setMethod, bytes };
+  const isInt = type.indexOf("int") !== -1
+  return { type, getMethod, setMethod, bytes, isInt };
 }
+globalThis.getNumTypeInfo = getNumTypeInfo;
 
 export const hex = (n: number, len: number = 0) => (+n).toString(16).toUpperCase().padStart(len, '0');
 
@@ -160,3 +154,20 @@ export function removeChild(parent: HTMLElement, child: HTMLElement): boolean {
     return false;
   }
 }
+
+export function reverseKeyValues(o: any): any {
+  const reversed = {};
+  for (let key in o) {
+    if (o.hasOwnProperty(key)) {
+      reversed[o[key]] = key;
+    }
+  }
+  return reversed;
+}
+
+export const createLink = (html?: string): HTMLSpanElement => {
+  const link = document.createElement("span");
+  if (typeof html === 'string') link.innerHTML = html;
+  link.classList.add("link");
+  return link;
+};

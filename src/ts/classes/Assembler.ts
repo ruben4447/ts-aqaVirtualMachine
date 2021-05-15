@@ -1,8 +1,9 @@
 import CPU from "./CPU";
-import { AssemblerType, AssemblyLineType, IAssemblerInstructionMap, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine } from "../types/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine } from "../types/Assembler";
 import { INumberType } from "../types/general";
 import { matchesTypeSignature } from "../utils/Assembler";
-import { arrayToBuffer, getNumericBaseFromPrefix, underlineStringPortion } from "../utils/general";
+import { arrayToBuffer, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
+import { ICPUInstructionSet } from "../types/CPU";
 
 export class AssemblerError extends Error {
   protected _messageStack: string[];
@@ -59,22 +60,43 @@ export class AssemblerError extends Error {
 
 export class Assembler {
   private _cpu: CPU; // CPU we are assembling for
-  private _imap: IAssemblerInstructionMap;
+  private _imap: IInstructionSet;
 
-  constructor(cpu: CPU, instructionMap: IAssemblerInstructionMap) {
+  private _assembly: string;
+  private _ast: IAssemblyLine[];
+  private _bytes: ArrayBuffer;
+
+  constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
     this._cpu = cpu;
   }
 
+  public setAssemblyCode(code: string) {
+    this._assembly = code;
+    this._ast = undefined;
+    this._bytes = undefined;
+  }
+
+  public getAssemblyCode(): string { return this._assembly; }
+  public getAST(): IAssemblyLine[] | undefined { return this._ast; }
+  public getBytes(): ArrayBuffer | undefined { return this._bytes; }
+
   /** Is current string an instruction? */
-  public isInstruction(string: string): boolean { return this._imap.hasOwnProperty(string.toUpperCase()); }
+  private _isInstruction(string: string): boolean {
+    for (let instruction in this._imap) {
+      if (this._imap.hasOwnProperty(instruction)) {
+        if (this._imap[instruction].mnemonic === string) return true;
+      }
+    }
+    return false;
+  }
 
   /**
    * Parse assembly code string
    * @throws AssemblerError
-   * @return Returns ArrayBuffer as bytes. Intended to be read as Float64 typed array
+   * Results can be obtained via this.getAST() or this.getBytes()
    */
-  public parse(assembly: string, origin: string = "<anonymous>"): ArrayBuffer {
+  public parse(assembly: string, origin: string = "<anonymous>"): void {
     let ast: IAssemblyLine[], nums: number[];
     try {
       ast = this._parseToAST(assembly);
@@ -85,6 +107,8 @@ export class Assembler {
       }
       throw e;
     }
+    this._ast = ast;
+
     try {
       nums = this._astToNums(ast);
     } catch (e) {
@@ -95,8 +119,7 @@ export class Assembler {
       throw e;
     }
 
-
-    return arrayToBuffer(nums, this._cpu.numType);
+    this._bytes = arrayToBuffer(nums, this._cpu.numType);
   }
 
   /**
@@ -114,12 +137,12 @@ export class Assembler {
         const parts = line.split(/\s+/g).map(x => x.replace(',', ''));
 
         // If instruction...
-        if (this.isInstruction(parts[0])) {
-          const instruction = parts.shift();
+        if (this._isInstruction(parts[0].toUpperCase())) {
+          const instruction = parts.shift().toUpperCase();
           const uinstruction = instruction.toUpperCase();
-          const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, instruction: undefined, args: [], };
+          const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, instruction: undefined, opcode: NaN, args: [], };
           try {
-            this.parseInstruction(uinstruction, parts, instructionLine);
+            this._parseInstruction(uinstruction, parts, instructionLine);
           } catch (e) {
             if (e instanceof AssemblerError) {
               e.setUnderlineString(line);
@@ -157,16 +180,9 @@ export class Assembler {
         let line = ast[i];
 
         if (line.type === AssemblyLineType.Instruction) {
-          // Check that instruction exists
-          if (this._cpu.instructionSet.hasOwnProperty((<IAssemblyInstructionLine>line).instruction)) {
-            nums.push(this._cpu.instructionSet[(<IAssemblyInstructionLine>line).instruction]); // Push opcode to nums array
-            (<IAssemblyInstructionLine>line).args.forEach(arg => nums.push(arg.num));
-          } else {
-            let json = JSON.stringify(line);
-            const error = new AssemblerError(`Cannot resolve instruction mnemonic '${(<IAssemblyInstructionLine>line).instruction}' to opcode`, `"instruction":"${(<IAssemblyInstructionLine>line).instruction}"`);
-            error.setUnderlineString(json);
-            throw error;
-          }
+          const info = line as IAssemblyInstructionLine;
+          nums.push(info.opcode); // Push opcode to nums array
+          info.args.forEach(arg => nums.push(arg.num));
         } else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
@@ -186,36 +202,42 @@ export class Assembler {
   }
 
   /** Parse an instruction */
-  public parseInstruction(instruction: string, args: string[], line: IAssemblyInstructionLine): void {
+  private _parseInstruction(instruction: string, args: string[], line: IAssemblyInstructionLine): void {
     // Parse each argument
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
       if (arg.length == 0) continue;
-      let obj = this.parseArgument(arg);
+      let obj = this._parseArgument(arg);
       if (obj.type == undefined) throw new AssemblerError('Syntax Error: \'' + arg + '\' (operand type cannot be determined)', arg);
       line.args.push(obj);
     }
 
-    // Check if there is a sub-instruction with that signature
-    for (let subinstruction in this._imap[instruction]) {
-      if (this._imap[instruction].hasOwnProperty(subinstruction)) {
-        const commandInfo = this._imap[instruction][subinstruction];
-        if (matchesTypeSignature(line.args, commandInfo.args)) {
-          line.instruction = subinstruction;
-          break;
+    // Check if a suitable instruction exists
+    for (let operation in this._imap) {
+      const commandInfo = this._imap[operation];
+      if (commandInfo.mnemonic === instruction && matchesTypeSignature(line.args, commandInfo.args)) {
+        if (commandInfo.opcode == undefined || isNaN(commandInfo.opcode)) {
+          throw new AssemblerError(`Cannot resolve variant ${operation} of ${instruction} to opcode`, instruction);
         } else {
-          const arg_types = line.args.map(x => `<${AssemblerType[x.type]}>`).join(' ');
-          const error = new AssemblerError(`${instruction}: cannot find overload which matches provided arguments:`, ``);
-          error.appendMessage(`${instruction} ${arg_types}`);
-          error.highlightWholeLine = true;
-          throw error;
+          line.instruction = operation;
+          line.opcode = commandInfo.opcode;
+          break;
         }
       }
+    }
+
+    // If there was no match...
+    if (line.instruction === undefined) {
+      const arg_types = line.args.map(x => `<${AssemblerType[x.type]}>`).join(' ');
+      const error = new AssemblerError(`${instruction}: cannot find overload which matches provided arguments:`, ``);
+      error.appendMessage(`${instruction} ${arg_types}`);
+      error.highlightWholeLine = true;
+      throw error;
     }
   }
 
   /** Parse an argument string and return an information object */
-  public parseArgument(argument: string): IAssemblerToken {
+  private _parseArgument(argument: string): IAssemblerToken {
     const token: IAssemblerToken = { type: undefined, value: argument, num: undefined, };
 
     if (argument.length > 1 && argument[0] == '#') {
@@ -229,7 +251,7 @@ export class Assembler {
         token.num = base == undefined ? +argument.slice(1) : parseInt(argument.slice(2), base);
       }
     } else {
-      const registerIndex = this._cpu.registerMap.indexOf(argument);
+      const registerIndex = this._cpu.registerMap.indexOf(argument.toLowerCase());
       if (!isNaN(registerIndex) && registerIndex !== -1) {
         // Register
         token.type = AssemblerType.Register;
@@ -252,7 +274,28 @@ export class Assembler {
       }
     }
 
+    // if there is a number, and CPU operates on an integer typing...
+    if (token.num !== undefined && this._cpu.numType.isInt) token.num = Math.floor(token.num);
+
     return token;
+  }
+
+  /** From instruction set, generate instruction SET for the CPU */
+  public static generateCPUInstructionSet(instructionSet: IInstructionSet): ICPUInstructionSet {
+    const data = {};
+    const usedOpcodes: number[] = [];
+    for (const instruction in instructionSet) {
+      if (instructionSet.hasOwnProperty(instruction)) {
+        const opcode = instructionSet[instruction].opcode;
+        if (usedOpcodes.indexOf(opcode) === -1) {
+          data[instruction] = opcode;
+          usedOpcodes.push(opcode);
+        } else {
+          throw new Error(`Invalid instruction set: duplicate opcode present: 0x${hex(opcode)} (${instruction})`);
+        }
+      }
+    }
+    return data;
   }
 }
 

@@ -8,12 +8,13 @@ export function withinState(screen: CustomScreen, action: (S: CustomScreen) => v
 }
 
 /** Write multi-line to the screen */
-export function writeMultilineString(screen: CustomScreen, text: string) {
-  const lines = text.split(/\r\n|\n|\r/g);
-  for (const line of lines) {
+export function writeMultilineString(screen: CustomScreen, text: string, maxWidth?: number) {
+  const lines = text.split(/\r\n|\n|\r/g), lastIndex = lines.length - 1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     let dim = screen.measureText(line);
-    screen.writeString(line, false);
-    screen.y += dim.height;
+    screen.writeString(line, false, maxWidth);
+    if (i != lastIndex) screen.y += dim.height;
   }
 }
 

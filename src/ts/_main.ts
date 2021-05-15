@@ -1,7 +1,5 @@
 import { Assembler } from "./classes/Assembler";
-import { assemblerInstructionMap } from "./assemblerInstructionMap";
 import CPU from "./classes/CPU";
-import { cpuInstructionSet } from "./cpuInstructionSet";
 import CustomScreen from "./classes/Screen";
 
 import Tabs from "./classes/Tabs";
@@ -10,6 +8,7 @@ import * as tabCode from "./tabs/code";
 import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
 import globals from "./globals";
+import instructionSet from "./instructionSet";
 
 function init() {
   // SET UP OUTPUT SCREEN
@@ -26,11 +25,11 @@ function init() {
   btnClearScreen.addEventListener('click', () => output.clear());
   outputWrapper.appendChild(btnClearScreen);
 
-  // SET UP CPU AND ASSEBLER
-  const cpu = new CPU(cpuInstructionSet, 0xFFF);
+  // SET UP CPU AND ASSEMBLER
+  const cpu = new CPU(Assembler.generateCPUInstructionSet(instructionSet), 0xFFF, 'uint8');
   globals.cpu = cpu;
 
-  const assembler = new Assembler(cpu, assemblerInstructionMap);
+  const assembler = new Assembler(cpu, instructionSet);
   globals.assembler = assembler;
 
   // SET UP TABS
@@ -64,13 +63,17 @@ function init() {
 function main() {
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory();
-  globals.tabs._.open('instructionSet');
+  globals.tabs._.open('code');
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
-  tabCode.properties.assemblyCodeInput.value = "LDR r8, 0 ' Load contents at address 0 into register 8\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "ADD r8, r1, #70";
 
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory();
+  globals.tabs._.open('run');
+  tabRun.runOneCycle(true);
+
+  globals.cpu.executionConfig.haltOnNull = false;
 }
 
 window.addEventListener('load', () => {
