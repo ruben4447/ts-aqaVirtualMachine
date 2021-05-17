@@ -1,4 +1,5 @@
 import type CPU from "../classes/CPU";
+import { NumberType } from "./general";
 
 export interface ICPUInstructionSet {
   [instruction: string]: number; // Map instruction to opcode
@@ -6,6 +7,14 @@ export interface ICPUInstructionSet {
 
 export interface IReversedCPUInstructionSet {
   [opcode: number]: string; // Map opcodes to instructions
+}
+
+/** Configuration for a CPU */
+export interface ICPUConfiguration {
+  instructionSet: ICPUInstructionSet;
+  numType?: NumberType; // What numerical type memory operates in
+  memory?: number; // Memory size
+  registerMap?: string[]; // Register map. The CPU will as the required registers if they aren't present
 }
 
 export type MemoryWriteCallback = (startAddress: number, endAddress: number, cpu: CPU) => void;

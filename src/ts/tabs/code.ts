@@ -42,6 +42,7 @@ function generateAssemblyHTML(): HTMLDivElement {
 
   const textarea = document.createElement('textarea');
   properties.assemblyCodeInput = textarea;
+  textarea.value = "' Start typing AQA Assembly code here!\nHALT";
   textarea.rows = 10;
   textarea.cols = 100;
   wrapper.appendChild(textarea);

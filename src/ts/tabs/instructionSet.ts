@@ -1,7 +1,7 @@
 import globals from "../globals";
 import instructionSet from "../instructionSet";
 import { AssemblerType } from "../types/Assembler";
-import { IInstructionSetProperties, ITabInfo } from "../types/Tabs";
+import { IInstructionSetTabProperties, ITabInfo } from "../types/Tabs";
 import { hex } from "../utils/general";
 
 export const info: ITabInfo = {
@@ -10,7 +10,7 @@ export const info: ITabInfo = {
   displayMulti: false,
 };
 
-export const properties: IInstructionSetProperties = {};
+export const properties: IInstructionSetTabProperties = {};
 
 function generateAssemblerInstructionSetHTML(): HTMLDivElement {
   const wrapper = document.createElement('div');

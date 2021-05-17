@@ -1,4 +1,4 @@
-import { createCPUExecutionConfigObject, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
+import { createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
 import { INumberType, NumberType } from "../types/general";
 import { getNumTypeInfo, hex, numberToString, reverseKeyValues } from "../utils/general";
 
@@ -9,6 +9,8 @@ export class CPUError extends Error {
 }
 
 export class CPU {
+  public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
+
   public readonly instructionSet: ICPUInstructionSet;
   private readonly reversedInstructionSet: IReversedCPUInstructionSet;
   public readonly registerMap: string[]; // Map register names to index positions
@@ -24,18 +26,24 @@ export class CPU {
   public executionConfig: ICPUExecutionConfig;
 
 
-  constructor(instructionSet: ICPUInstructionSet, memorySize: number = 0xfff, numType: NumberType = "float64") {
-    this.instructionSet = instructionSet;
-    this.reversedInstructionSet = reverseKeyValues(instructionSet);
+  constructor(config: ICPUConfiguration) {
+    this.instructionSet = config.instructionSet;
+    this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
+    const numType = config.numType || 'float32';
     this.numType = getNumTypeInfo(numType);
 
-    this.registerMap = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "ip"];
+    this.registerMap = config.registerMap || CPU.defaultRegisters;
+    const requiredRegisters = ["ip"];
+    for (const requiredRegister of requiredRegisters)
+      if (this.registerMap.indexOf(requiredRegister) === -1)
+        this.registerMap.push(requiredRegister);
+
     this._ip = this.registerMap.indexOf("ip");
     this.__registers = new ArrayBuffer(this.registerMap.length * this.numType.bytes);
     this._registers = new DataView(this.__registers);
 
-    this.memorySize = memorySize;
+    this.memorySize = config.memory || 0xFFF;
     this.__memory = new ArrayBuffer(this.memorySize * this.numType.bytes);
     this._memory = new DataView(this.__memory);
 
@@ -71,6 +79,9 @@ export class CPU {
   // #endregion
 
   // #region Memory
+  /** Get memory size in bytes */
+  public memorySizeBytes(): number { return this.memorySize * this.numType.bytes; }
+
   /** Is this a valid memory address? */
   public isValidAddress(address: number): boolean { return address >= 0 && address < this.memorySize; }
 

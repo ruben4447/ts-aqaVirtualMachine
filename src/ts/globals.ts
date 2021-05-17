@@ -5,9 +5,12 @@ import type RegisterView from "./classes/RegisterView";
 import type CustomScreen from "./classes/Screen";
 import type Tabs from "./classes/Tabs";
 import type { IInstructionSet } from "./types/Assembler";
-import type { ICodeTabProperties, IInstructionSetProperties, IMemoryTabProperties, IRunTabProperties } from "./types/Tabs";
+import type { ICodeTabProperties, ICPUTabProperties, IInstructionSetTabProperties, IMemoryTabProperties, IRunTabProperties } from "./types/Tabs";
 
 interface IGlobals {
+  $name: string; // Name of application
+  main: HTMLDivElement; // Main contant of page.
+  base: number; // Base to view numbers in
   cpu: CPU; // Main CPU
   assembler: Assembler; // Main assembler
   output: CustomScreen; // Main output console
@@ -16,7 +19,8 @@ interface IGlobals {
     code: ICodeTabProperties;
     memory: IMemoryTabProperties;
     run: IRunTabProperties;
-    instructionSet: IInstructionSetProperties;
+    instructionSet: IInstructionSetTabProperties;
+    cpu: ICPUTabProperties;
   },
   memoryView: MemoryView;
   registerView: RegisterView;
@@ -24,6 +28,9 @@ interface IGlobals {
 };
 
 const globals: IGlobals = {
+  $name: "ts-aqaVirtualMachine",
+  main: undefined,
+  base: 16,
   cpu: undefined,
   assembler: undefined,
   output: undefined,
@@ -33,6 +40,7 @@ const globals: IGlobals = {
     memory: undefined,
     run: undefined,
     instructionSet: undefined,
+    cpu: undefined,
   },
   memoryView: undefined,
   registerView: undefined,

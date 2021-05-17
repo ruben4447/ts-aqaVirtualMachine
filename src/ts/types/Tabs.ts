@@ -44,6 +44,9 @@ export interface IRunTabProperties {
 }
 
 /** Properties for tab:"instruction set" */
-export interface IInstructionSetProperties {
+export interface IInstructionSetTabProperties { }
 
+/** Properties for tab:"cpu" */
+export interface ICPUTabProperties {
+  content: HTMLDivElement;
 }

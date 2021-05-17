@@ -28,7 +28,9 @@ export const getTextMetrics = (ctx: CanvasRenderingContext2D, text: string): ITe
   };
 };
 
-export const splitString = (string: string, nSize: number) => string.match(new RegExp(`.{1,${nSize}}`, 'g'));
+export const splitString = (string: string, nSize: number): string[] => string.match(new RegExp(`.{1,${nSize}}`, 'g'));
+
+export const numericTypes: NumberType[] = ["int8", "uint8", "int16", "uint16", "int32", "uint32", "float32", "float64"];
 
 /** Given number type, return information */
 export function getNumTypeInfo(type: NumberType): INumberType {
@@ -89,12 +91,11 @@ export const hex = (n: number, len: number = 0) => (+n).toString(16).toUpperCase
 export function numberToString(type: INumberType, n: number, base: number): string {
   const maxLength = (0xff).toString(base).length;
 
-  let a = new Uint8Array(type.bytes);
-  let view = new DataView(a.buffer);
+  const buffer = new ArrayBuffer(type.bytes), view = new DataView(buffer);
   view[type.setMethod](0, n);
 
   let str = '';
-  for (let i = 0; i < a.length; i++) {
+  for (let i = 0; i < view.byteLength; i++) {
     let n = view.getUint8(i);
     str += n.toString(base).padStart(maxLength, '0');
   }
@@ -105,18 +106,37 @@ export function numberToString(type: INumberType, n: number, base: number): stri
 export function numberFromString(type: INumberType, str: string, base: number): number {
   const length = (0xff).toString(base).length;
 
-  let a = new Uint8Array(type.bytes);
+  const buffer = new ArrayBuffer(type.bytes), view = new DataView(buffer);
   let bytes = splitString(str, length);
 
   if (bytes.length !== type.bytes) throw new Error(`Decoding '${str}' to ${type} (${type.bytes} bytes) from base ${base}: expected input to be in ${length}-byte chunks`);
 
-  for (let i = 0; i < a.length; i++) {
+  for (let i = 0; i < view.byteLength; i++) {
     let n = parseInt(bytes[i], base);
-    a[i] = n;
+    view.setUint8(i, n);
   }
 
-  let view = new DataView(a.buffer);
   return view[type.getMethod](0);
+}
+
+/**
+ * Returns [min, max] ranges of numeric data types
+ * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+ */
+export function getMinMaxValues(datatype: NumberType | INumberType): [number, number] {
+  let type = typeof datatype === 'object' ? datatype.type : datatype;
+  switch (type) {
+    case 'int8': return [-128, 127];
+    case 'uint8': return [0, 255];
+    case 'int16': return [-32768, 32767];
+    case 'uint16': return [0, 65535];
+    case 'int32': return [-2147483648, 2147483647];
+    case 'uint32': return [0, 4294967295];
+    case 'float32': return [1.2e-38, 3.4e+38];
+    case 'float64': return [5.0e-324, 1.7976931348623157e+308]; // Roughly 1.8e+308
+    default:
+      return [NaN, NaN];
+  }
 }
 
 export const rowColToIndex = (row: number, col: number, cols: number) => (row * cols) + col;
@@ -171,3 +191,7 @@ export const createLink = (html?: string): HTMLSpanElement => {
   link.classList.add("link");
   return link;
 };
+
+export function seperateNumber(n: number, seperator = ','): string {
+  return n.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, seperator);
+}

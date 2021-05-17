@@ -189,7 +189,6 @@ export function run() {
 
 function displayExecInfo(info: IExecuteRecord) {
   const S = properties.feedbackScreen;
-  if (info.error) console.log(info);
   S.clear();
   loadCodeFont(S);
 

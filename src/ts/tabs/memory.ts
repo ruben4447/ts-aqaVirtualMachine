@@ -18,6 +18,8 @@ export const properties: IMemoryTabProperties = {
   updateMemoryViewOnMemoryWrite: true,
 };
 
+export var updateGUI: () => void; // Function declared in generateMemoryViewHTML() which updates GUI elements.
+
 /** For MemoryView */
 function generateMemoryViewHTML(): HTMLDivElement {
   const wrapper = document.createElement("div");
@@ -98,7 +100,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
 
   // Show current address range
   const addressRange = document.createElement("code");
-  const updateGUI = () => {
+  updateGUI = () => {
     // addressRange HTML
     const pad = view.getMaxAddress().toString(view.base).length;
     const [min, max] = view.getAddressRange();
@@ -210,25 +212,6 @@ function generateMemoryViewHTML(): HTMLDivElement {
       updateGUI();
     } else {
       inputCols.value = view.cols.toString();
-    }
-  });
-  // Numeric base
-  p.insertAdjacentHTML('beforeend', ' &nbsp;|&nbsp; Base: ');
-  let inputBase = document.createElement("input");
-  inputBase.type = "number";
-  inputBase.min = "2";
-  inputBase.max = "37";
-  inputBase.value = view.base.toString();
-  p.appendChild(inputBase);
-  inputBase.addEventListener('change', () => {
-    const base = parseInt(inputBase.value);
-    if (base >= +inputBase.min && base < +inputBase.max) {
-      // This links to both views
-      properties.memoryView.base = base;
-      properties.registerView.base = base;
-      updateGUI();
-    } else {
-      inputBase.value = view.base.toString();
     }
   });
 

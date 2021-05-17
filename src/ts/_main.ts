@@ -7,10 +7,34 @@ import * as tabMemory from "./tabs/memory";
 import * as tabCode from "./tabs/code";
 import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
+import * as tabCPU from "./tabs/cpu";
 import globals from "./globals";
 import instructionSet from "./instructionSet";
+import { ICPUConfiguration } from "./types/CPU";
+import * as utils from './utils/general';
+globalThis.utils = utils;
 
-function init() {
+/**
+ * Initialise web application
+ * Set content to globals.main as well as returning it.
+ */
+export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement {
+  if (globals.main) globals.main.remove(); // destroy old application
+
+  const logPad = '-'.repeat(20);
+  console.log(logPad);
+  console.log(`%cInitiating Application...`, 'color:lime;background:black;');
+  console.log(`%cCPU Data Type%c = %c${cpuConfiguration.numType}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Memory Size%c = %c${cpuConfiguration.memory}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Registers%c = %c${cpuConfiguration.registerMap}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(logPad);
+
+  const main = document.createElement('div');
+  main.classList.add('webapp-container');
+  main.dataset.name = globals.$name;
+  globals.main = main;
+  document.body.insertAdjacentElement('afterbegin', main);
+
   // SET UP OUTPUT SCREEN
   const outputWrapper = document.createElement("div");
   const output = new CustomScreen(outputWrapper);
@@ -26,7 +50,7 @@ function init() {
   outputWrapper.appendChild(btnClearScreen);
 
   // SET UP CPU AND ASSEMBLER
-  const cpu = new CPU(Assembler.generateCPUInstructionSet(instructionSet), 0xFFF, 'uint8');
+  const cpu = new CPU(cpuConfiguration);
   globals.cpu = cpu;
 
   const assembler = new Assembler(cpu, instructionSet);
@@ -47,36 +71,39 @@ function init() {
   tabInstructionSet.init();
   globals.tabs.instructionSet = tabInstructionSet.properties;
 
+  tabCPU.init();
+  globals.tabs.cpu = tabCPU.properties;
+
   const tabManager = new Tabs(
-    document.getElementById('tab-wrapper') as HTMLDivElement,
+    main,
     {
       code: tabCode.info,
       memory: tabMemory.info,
       run: tabRun.info,
       instructionSet: tabInstructionSet.info,
+      cpu: tabCPU.info,
     },
     outputWrapper,
   );
   globals.tabs._ = tabManager;
+
+  return main;
 }
 
-function main() {
-  tabCode.compileAssembly();
-  tabCode.loadMachineCodeToMemory();
-  globals.tabs._.open('code');
+function __app_main_() {
+  __app_init_({
+    instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
+    numType: 'int16',
+    memory: 0xDEAD,
+    // registerMap: new Array(20).fill('r').map((v, i) => v + i),
+  });
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
   tabCode.properties.assemblyCodeInput.value = "ADD r8, r1, #70";
 
-  tabCode.compileAssembly();
-  tabCode.loadMachineCodeToMemory();
-  globals.tabs._.open('run');
-  tabRun.runOneCycle(true);
-
-  globals.cpu.executionConfig.haltOnNull = false;
+  globals.tabs._.open("cpu");
 }
 
 window.addEventListener('load', () => {
-  init();
-  main();
+  __app_main_();
 });

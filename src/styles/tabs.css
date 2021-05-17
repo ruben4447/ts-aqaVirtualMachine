@@ -23,8 +23,12 @@
   user-select: none;
 }
 
-section.tab-content {
-  margin: 2px;
+.tab-container {
+  padding: 5px 0;
+  margin-bottom: 10px;
+}
+
+.tab-content {
   border: 1px solid black;
   padding: 3px;
 }
