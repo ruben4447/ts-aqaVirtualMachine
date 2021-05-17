@@ -1,6 +1,7 @@
 import { createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
-import { INumberType, NumberType } from "../types/general";
+import { INumberType } from "../types/general";
 import { getNumTypeInfo, hex, numberToString, reverseKeyValues } from "../utils/general";
+import { CMP, compare } from '../utils/CPU';
 
 export class CPUError extends Error {
   constructor(message: string) {
@@ -34,7 +35,7 @@ export class CPU {
     this.numType = getNumTypeInfo(numType);
 
     this.registerMap = config.registerMap || CPU.defaultRegisters;
-    const requiredRegisters = ["ip"];
+    const requiredRegisters = ["ip", "cmp"]; // Instruction Pointer, Compare
     for (const requiredRegister of requiredRegisters)
       if (this.registerMap.indexOf(requiredRegister) === -1)
         this.registerMap.push(requiredRegister);
@@ -302,6 +303,42 @@ export class CPU {
           info.text = `Move constant 0x${this.toHex(constant)} into register ${this.registerMap[register]}`;
         }
         this.writeRegister(register, constant);
+        break;
+      }
+      case this.instructionSet.CMP_REG: {
+        // CMP register1 register2
+        const register1 = this.fetch(), register2 = this.fetch();
+        const register1value = this.readRegister(register1), register2value = this.readRegister(register2);
+        info.args = [register1, register2];
+        const comparison = compare(register1value, register2value);
+        if (this.executionConfig.commentary) {
+          info.text = `Compare register ${this.registerMap[register1]} (0x${this.toHex(register1value)}) and register ${this.registerMap[register2]} (0x${this.toHex(register2value)}) --> ${comparison} (${CMP[comparison]})`;
+        }
+        this.writeRegister('cmp', comparison);
+        break;
+      }
+      case this.instructionSet.CMP_ADDR: {
+        // CMP register address
+        const register = this.fetch(), address = this.fetch();
+        const registerValue = this.readRegister(register), addressValue = this.readMemory(address);
+        info.args = [register, address];
+        const comparison = compare(registerValue, addressValue);
+        if (this.executionConfig.commentary) {
+          info.text = `Compare register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) and address 0x${this.toHex(address)} (0x${this.toHex(addressValue)}) --> ${comparison} (${CMP[comparison]})`;
+        }
+        this.writeRegister('cmp', comparison);
+        break;
+      }
+      case this.instructionSet.CMP_CONST: {
+        // CMP register constant
+        const register = this.fetch(), constant = this.fetch();
+        const registerValue = this.readRegister(register);
+        info.args = [register, constant];
+        const comparison = compare(registerValue, constant);
+        if (this.executionConfig.commentary) {
+          info.text = `Compare register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) and constant 0x${this.toHex(constant)} --> ${comparison} (${CMP[comparison]})`;
+        }
+        this.writeRegister('cmp', comparison);
         break;
       }
       default:

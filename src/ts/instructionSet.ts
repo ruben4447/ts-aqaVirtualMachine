@@ -93,6 +93,28 @@ export const instructionSet: IInstructionSet = {
     isAQA: true,
   },
 
+  CMP_REG: {
+    mnemonic: "CMP",
+    opcode: 0x1A,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: "Compare register [register1] to [register2]",
+    isAQA: true,
+  },
+  CMP_ADDR: {
+    mnemonic: "CMP",
+    opcode: 0x1B,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: "Compare register [register] to address [address]",
+    isAQA: true,
+  },
+  CMP_CONST: {
+    mnemonic: "CMP",
+    opcode: 0x1C,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Compare register [register1] to [constant]",
+    isAQA: true,
+  },
+
   HALT: {
     mnemonic: "HALT",
     opcode: 0x7f, // 0xff causes issues if using int8, as 0xff in int8 is -1
