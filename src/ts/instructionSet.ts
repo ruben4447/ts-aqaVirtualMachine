@@ -1,6 +1,9 @@
 import globals from "./globals";
 import { AssemblerType, IInstructionSet } from "./types/Assembler";
 
+// TODO: add "subset" regions, mapping address ranges to common meaning e.g. 0x1- to "memory managment"
+//       make visible in instructionSet tab above the command table, and insert as new column for each command
+
 /** For assembler; list every instruction */
 export const instructionSet: IInstructionSet = {
   NULL: {
@@ -11,6 +14,7 @@ export const instructionSet: IInstructionSet = {
     isAQA: false,
   },
 
+  // #region Memory Managment (0x1-)
   LDR: {
     mnemonic: 'LDR',
     opcode: 0x10,
@@ -27,6 +31,30 @@ export const instructionSet: IInstructionSet = {
     isAQA: true,
   },
 
+  MOV_REG: {
+    mnemonic: "MOV",
+    opcode: 0x14,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: "Copy the value in [register2] to [register1]",
+    isAQA: true,
+  },
+  MOV_ADDR: {
+    mnemonic: "MOV",
+    opcode: 0x15,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: "Copy the value at address [address] to [register]",
+    isAQA: true,
+  },
+  MOV_CONST: {
+    mnemonic: "MOV",
+    opcode: 0x16,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Move value [constant] in to [register]",
+    isAQA: true,
+  },
+  // #endregion
+
+  // #region Maths (0x2-)
   ADD_REG: {
     mnemonic: "ADD",
     opcode: 0x20,
@@ -51,69 +79,74 @@ export const instructionSet: IInstructionSet = {
 
   SUB_REG: {
     mnemonic: "SUB",
-    opcode: 0x25,
+    opcode: 0x23,
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
     desc: "[register2] - [register3] and store in [register1]",
     isAQA: true,
   },
   SUB_ADDR: {
     mnemonic: "SUB",
-    opcode: 0x26,
+    opcode: 0x24,
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
     desc: "[register2] - value at [address] and store in [register1]",
     isAQA: true,
   },
   SUB_CONST: {
     mnemonic: "SUB",
-    opcode: 0x27,
+    opcode: 0x25,
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
     desc: "[register2] - [constant] and store in [register1]",
     isAQA: true,
   },
+  // #endregion Maths
 
-  MOV_REG: {
-    mnemonic: "MOV",
-    opcode: 0x15,
-    args: [AssemblerType.Register, AssemblerType.Register],
-    desc: "Copy the value in [register2] to [register1]",
+  // #region Bitwise Manipulation (0x4-)
+  AND_REG: {
+    mnemonic: 'AND',
+    opcode: 0x40,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: '[register2] AND [register3] and store in [register1]',
     isAQA: true,
   },
-  MOV_ADDR: {
-    mnemonic: "MOV",
-    opcode: 0x16,
-    args: [AssemblerType.Register, AssemblerType.Address],
-    desc: "Copy the value at address [address] to [register]",
+  AND_ADDR: {
+    mnemonic: 'AND',
+    opcode: 0x41,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: '[register2] AND value at [address] and store in [register1]',
     isAQA: true,
   },
-  MOV_CONST: {
-    mnemonic: "MOV",
-    opcode: 0x17,
-    args: [AssemblerType.Register, AssemblerType.Constant],
-    desc: "Move value [constant] in to [register]",
+  AND_CONST: {
+    mnemonic: 'AND',
+    opcode: 0x42,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: '[register2] AND constant [constant] and store in [register1]',
     isAQA: true,
   },
+  // #endregion
 
+  // #region IP Manipulation (0x6-)
   CMP_REG: {
     mnemonic: "CMP",
-    opcode: 0x1A,
+    opcode: 0x60,
     args: [AssemblerType.Register, AssemblerType.Register],
     desc: "Compare register [register1] to [register2]",
     isAQA: true,
   },
   CMP_ADDR: {
     mnemonic: "CMP",
-    opcode: 0x1B,
+    opcode: 0x61,
     args: [AssemblerType.Register, AssemblerType.Address],
     desc: "Compare register [register] to address [address]",
     isAQA: true,
   },
   CMP_CONST: {
     mnemonic: "CMP",
-    opcode: 0x1C,
+    opcode: 0x62,
     args: [AssemblerType.Register, AssemblerType.Constant],
     desc: "Compare register [register1] to [constant]",
     isAQA: true,
   },
+  // #endregion
 
   HALT: {
     mnemonic: "HALT",
