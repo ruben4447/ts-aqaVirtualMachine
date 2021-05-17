@@ -71,27 +71,27 @@ export const instructionSet: IInstructionSet = {
     isAQA: true,
   },
 
-  // MOV_REG: {
-  //   mnemonic: "MOV",
-  //   opcode: 0x15,
-  //   args: [AssemblerType.Register, AssemblerType.Register],
-  //   desc: "Copy the value in [register2] to [register1]",
-  //   isAQA: true,
-  // },
-  // MOV_ADDR: {
-  //   mnemonic: "MOV",
-  //   opcode: 0x16,
-  //   args: [AssemblerType.Register, AssemblerType.Address],
-  //   desc: "Copy the value at address [address] to [register]",
-  //   isAQA: true,
-  // },
-  // MOV_CONST: {
-  //   mnemonic: "MOV",
-  //   opcode: 0x17,
-  //   args: [AssemblerType.Register, AssemblerType.Constant],
-  //   desc: "Move value [constant] in to [register]",
-  //   isAQA: true,
-  // },
+  MOV_REG: {
+    mnemonic: "MOV",
+    opcode: 0x15,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: "Copy the value in [register2] to [register1]",
+    isAQA: true,
+  },
+  MOV_ADDR: {
+    mnemonic: "MOV",
+    opcode: 0x16,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: "Copy the value at address [address] to [register]",
+    isAQA: true,
+  },
+  MOV_CONST: {
+    mnemonic: "MOV",
+    opcode: 0x17,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Move value [constant] in to [register]",
+    isAQA: true,
+  },
 
   HALT: {
     mnemonic: "HALT",

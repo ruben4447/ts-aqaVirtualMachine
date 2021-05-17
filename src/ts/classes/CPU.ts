@@ -272,6 +272,38 @@ export class CPU {
         this.writeRegister(register1, result);
         break;
       }
+      case this.instructionSet.MOV_REG: {
+        // MOV register1 register2
+        const register1 = this.fetch(), register2 = this.fetch();
+        const register2val = this.readRegister(register2);
+        info.args = [register1, register2];
+        if (this.executionConfig.commentary) {
+          info.text = `Copy contents of register ${this.registerMap[register2]} (0x${this.toHex(register2val)}) into register ${this.registerMap[register1]}`;
+        }
+        this.writeRegister(register1, register2val);
+        break;
+      }
+      case this.instructionSet.MOV_ADDR: {
+        // MOV register address
+        const register = this.fetch(), address = this.fetch();
+        const value = this.readMemory(address);
+        info.args = [register, register];
+        if (this.executionConfig.commentary) {
+          info.text = `Copy contents of address 0x${this.toHex(address)} (0x${this.toHex(value)}) into register ${this.registerMap[register]}`;
+        }
+        this.writeRegister(register, value);
+        break;
+      }
+      case this.instructionSet.MOV_CONST: {
+        // MOV register constant
+        const register = this.fetch(), constant = this.fetch();
+        info.args = [register, constant];
+        if (this.executionConfig.commentary) {
+          info.text = `Move constant 0x${this.toHex(constant)} into register ${this.registerMap[register]}`;
+        }
+        this.writeRegister(register, constant);
+        break;
+      }
       default:
         info.termination = true;
         throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);

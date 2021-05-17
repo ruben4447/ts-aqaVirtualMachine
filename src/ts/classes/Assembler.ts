@@ -134,7 +134,7 @@ export class Assembler {
         let line = lines[i].trim();
         line = line.replace(/'.*$/g, ''); // Remove comments
         if (line.length === 0) continue;
-        const parts = line.split(/\s+/g).map(x => x.replace(',', ''));
+        const parts = line.replace(',', ' ').split(/\s+/g).filter(x => x.length > 0);
 
         // If instruction...
         if (this._isInstruction(parts[0].toUpperCase())) {
