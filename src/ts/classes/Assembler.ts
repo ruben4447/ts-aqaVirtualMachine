@@ -1,7 +1,6 @@
 import CPU from "./CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine } from "../types/Assembler";
-import { INumberType } from "../types/general";
-import { matchesTypeSignature } from "../utils/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine } from "../types/Assembler";
+import { isValidLabel, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { arrayToBuffer, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
 
@@ -65,6 +64,7 @@ export class Assembler {
   private _assembly: string;
   private _ast: IAssemblyLine[];
   private _bytes: ArrayBuffer;
+  private _labels: ILabelMap = {};
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
@@ -75,21 +75,14 @@ export class Assembler {
     this._assembly = code;
     this._ast = undefined;
     this._bytes = undefined;
+    this._labels = {};
   }
 
   public getAssemblyCode(): string { return this._assembly; }
   public getAST(): IAssemblyLine[] | undefined { return this._ast; }
   public getBytes(): ArrayBuffer | undefined { return this._bytes; }
-
-  /** Is current string an instruction? */
-  private _isInstruction(string: string): boolean {
-    for (let instruction in this._imap) {
-      if (this._imap.hasOwnProperty(instruction)) {
-        if (this._imap[instruction].mnemonic === string) return true;
-      }
-    }
-    return false;
-  }
+  public getLabels() { return Object.keys(this._labels); }
+  public getLabel(label: string): number | undefined { return this._labels[label]; }
 
   /**
    * Parse assembly code string
@@ -123,10 +116,11 @@ export class Assembler {
   }
 
   /**
-   * Parse assembly string, return AST
+   * Parse assembly string, return AST.
    */
   private _parseToAST(assembly: string): IAssemblyLine[] {
     const ast: Array<IAssemblyLine> = [];
+    this._labels = {};
 
     const lines = assembly.split(/\r|\n|\r\n/g);
     for (let i = 0; i < lines.length; i++) {
@@ -137,8 +131,9 @@ export class Assembler {
         const parts = line.replace(/,/g, ' ').split(/\s+/g).filter(x => x.length > 0);
 
         // If instruction...
-        if (this._isInstruction(parts[0].toUpperCase())) {
-          const instruction = parts.shift().toUpperCase();
+        const instruction = this._getInstructionFromString(parts[0].toUpperCase());
+        if (instruction !== null) {
+          parts.shift();
           const uinstruction = instruction.toUpperCase();
           const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, instruction: undefined, opcode: NaN, args: [], };
           try {
@@ -151,6 +146,22 @@ export class Assembler {
             throw e;
           }
           ast.push(instructionLine);
+        } else if (parts[0][parts[0].length - 1] === ':') {
+          const label = parts[0].substr(0, parts[0].length - 1);
+          if (parts.length === 1) {
+            if (isValidLabel(label)) {
+              const labelLine: IAssemblyLabelDeclarationLine = { type: AssemblyLineType.Label, label, };
+              ast.push(labelLine);
+            } else {
+              const error = new AssemblerError(`Syntax Error: invalid label; must match ${label_regex}`, label);
+              error.setUnderlineString(line);
+              throw error;
+            }
+          } else {
+            const error = new AssemblerError(`Syntax Error: Expected newline after label declaration`, parts[1]);
+            error.setUnderlineString(line);
+            throw error;
+          }
         } else {
           const error = new AssemblerError(`Syntax Error: expected <instruction> or <label>, got '${parts[0]}'`, parts[0]);
           error.setUnderlineString(line);
@@ -171,9 +182,22 @@ export class Assembler {
 
   /**
    * Parse AST, return number[] array of "bytes"
+   * Populate this._labels
    */
   private _astToNums(ast: IAssemblyLine[]): number[] {
     const nums: number[] = [];
+    let address = 0; // Current address
+    this._labels = {};
+
+    // Resolve labels
+    for (let i = 0; i < ast.length; i++) {
+      const line = ast[i];
+      if (line.type === AssemblyLineType.Label) {
+        this._labels[(line as IAssemblyLabelDeclarationLine).label] = address;
+      } else if (line.type === AssemblyLineType.Instruction) {
+        address += 1 + (line as IAssemblyInstructionLine).args.length;
+      }
+    }
 
     for (let i = 0; i < ast.length; i++) {
       try {
@@ -181,9 +205,27 @@ export class Assembler {
 
         if (line.type === AssemblyLineType.Instruction) {
           const info = line as IAssemblyInstructionLine;
-          nums.push(info.opcode); // Push opcode to nums array
-          info.args.forEach(arg => nums.push(arg.num));
-        } else {
+          if (info.instruction === 'B') {
+            nums.push(this._imap.JMP_CONST.opcode);
+            nums.push(this._resolveLabel(info));
+          } else if (info.instruction === 'BEQ') {
+            nums.push(this._imap.JEQ_CONST.opcode);
+            nums.push(this._resolveLabel(info));
+          } else if (info.instruction === 'BNE') {
+            nums.push(this._imap.JNE_CONST.opcode);
+            nums.push(this._resolveLabel(info));
+          } else if (info.instruction === 'BLT') {
+            nums.push(this._imap.JLT_CONST.opcode);
+            nums.push(this._resolveLabel(info));
+          } else if (info.instruction === 'BGT') {
+            nums.push(this._imap.JGT_CONST.opcode);
+            nums.push(this._resolveLabel(info));
+          } else {
+            nums.push(info.opcode); // Push opcode to nums array
+            info.args.forEach(arg => nums.push(arg.num));
+            address += 1 + info.args.length;
+          }
+        } else if (line.type === AssemblyLineType.Label) {} else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
           error.setUnderlineString(json);
@@ -208,7 +250,7 @@ export class Assembler {
       const arg = args[i];
       if (arg.length == 0) continue;
       let obj = this._parseArgument(arg);
-      if (obj.type == undefined) throw new AssemblerError('Syntax Error: \'' + arg + '\' (operand type cannot be determined)', arg);
+      if (obj.type == undefined) throw new AssemblerError('Syntax Error: operand type cannot be determined', arg);
       line.args.push(obj);
     }
 
@@ -270,6 +312,11 @@ export class Assembler {
         if (!isNaN(addr)) {
           token.type = AssemblerType.Address;
           token.num = addr;
+        } else {
+          // Label?
+          if (isValidLabel(argument)) {
+            token.type = AssemblerType.Label;
+          }
         }
       }
     }
@@ -278,6 +325,30 @@ export class Assembler {
     if (token.num !== undefined && this._cpu.numType.isInt) token.num = Math.floor(token.num);
 
     return token;
+  }
+
+  /**
+   * Return instruction if given string is an instruction
+  */
+  private _getInstructionFromString(string: string): string | null {
+    for (let instruction in this._imap) {
+      if (this._imap.hasOwnProperty(instruction)) {
+        if (this._imap[instruction].mnemonic === string) return string;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Return value at label, or throw error
+   */
+  private _resolveLabel(info: IAssemblyInstructionLine): number {
+    const label = info.args[0].value;
+    if (this._labels[label] === undefined) {
+      throw new AssemblerError(`${info.instruction}: Unable to resolve label '${label}'`, label);
+    } else {
+      return this._labels[label];
+    }
   }
 
   /** From instruction set, generate instruction SET for the CPU */

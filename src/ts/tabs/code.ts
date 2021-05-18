@@ -14,6 +14,7 @@ export const info: ITabInfo = {
 export const properties: ICodeTabProperties = {
   assemblyCodeInput: undefined,
   partialTranslatedInput: undefined,
+  labelTable: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
   insertHalt: true,
@@ -60,14 +61,43 @@ function generatePartialHTML() {
   wrapper.appendChild(title);
   title.insertAdjacentHTML('beforeend', 'Partial Translation ');
 
+  const table = document.createElement('table');
+  table.classList.add("no-border");
+  wrapper.appendChild(table);
+  let tr = document.createElement('tr');
+  table.appendChild(tr);
+  
+  // Text input
+  let td = document.createElement('td');
+  tr.appendChild(td);
   const textarea = document.createElement('textarea');
+  td.appendChild(textarea);
   properties.partialTranslatedInput = textarea;
   textarea.readOnly = true;
   textarea.rows = 10;
   textarea.cols = 100;
-  wrapper.appendChild(textarea);
+  
+  // Label table
+  td = document.createElement('td');
+  tr.appendChild(td);
+  const labelTable = document.createElement("table");
+  td.appendChild(labelTable);
+  labelTable.insertAdjacentHTML('beforeend', `<thead><tr><th>Label</th><th>Address</th></tr></thead>`);
+  const labelTbody = document.createElement("tbody");
+  labelTable.appendChild(labelTbody);
 
+  properties.labelTable = labelTbody;
+  
   return wrapper;
+}
+
+function updateLabelTable() {
+  properties.labelTable.innerHTML = '';
+  const labels = globals.assembler.getLabels();
+  for (const label of labels) {
+    const addr = globals.assembler.getLabel(label);
+    properties.labelTable.insertAdjacentHTML('beforeend', `<tr><th>${label}</th><td><code>0x${globals.cpu.toHex(addr)}</code></td></tr>`);
+  }
 }
 
 function generateBinaryHTML(): HTMLDivElement {
@@ -165,6 +195,7 @@ export function decompileAssembly() {
 }
 
 function displayPartialTranslation() {
+  updateLabelTable();
   const lines = globals.assembler.getAST();
   let text = '';
   for (const line of lines) {
@@ -172,7 +203,7 @@ function displayPartialTranslation() {
       const info = line as IAssemblyInstructionLine;
       text += `[${info.instruction}] ${info.opcode}`;
       if (info.args.length > 0) {
-        text += ` : ${info.args.map(x => `<${AssemblerType[x.type].toLowerCase()}> ${x.num}`).join(', ')}`;
+        text += ` : ${info.args.map(x => `<${AssemblerType[x.type].toLowerCase()}> ${x.num == undefined ? `'${x.value}'` : x.num}`).join(', ')}`;
       }
       text += '\n';
     }

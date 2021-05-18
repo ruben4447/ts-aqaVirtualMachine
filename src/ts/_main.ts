@@ -88,9 +88,8 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
   withinState(globals.output, S => {
     S.reset();
     loadCodeFont(S);
-
     S.setForeground('lime');
-    writeMultilineInCentre(S, 'AQA Virtual Processor created!\nSee \'CPU\' tab for more'.toUpperCase());
+    writeMultilineInCentre(S, `-- Virtual Processor created --\nType ${cpu.numType.type}; memory capacity 0x${cpu.memorySize.toString(16)}\nSee \'CPU\' tab for more`.toUpperCase());
   });
 
   return main;
@@ -100,13 +99,14 @@ function __app_main_() {
   __app_init_({
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
     numType: 'int16',
-    memory: 0xDEAD,
-    // registerMap: new Array(20).fill('r').map((v, i) => v + i),
+    memory: 0xFFF,
   });
+  console.clear();
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "B end\nMOV r1, #1\nMOV r2, #9\nADD r3, r1, r2\nend:\nHALT";
 
-  globals.tabs._.open("memory");
+  globals.tabs._.open("code");
 }
 
 window.addEventListener('load', () => {

@@ -11,12 +11,13 @@ export enum AssemblerType {
   Address,
   Register,
   Constant,
+  Label,
 };
 
 /** Type of line in assembly AST */
 export enum AssemblyLineType {
-  Label,
   Instruction,
+  Label,
 };
 
 /** Interface describing Assembler instruction map */
@@ -48,4 +49,8 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
 /** Represent an assembly label declaration line */
 export interface IAssemblyLabelDeclarationLine extends IAssemblyLine {
   label: string;
+}
+
+export interface ILabelMap {
+  [label: string]: number;
 }

@@ -18,18 +18,18 @@ body {
   padding: 0 20px;
 }
 
-table,
-tr,
-th,
-td {
+table:not(.no-border),
+table:not(.no-border) tr,
+table:not(.no-border) th,
+table:not(.no-border) td {
   border: 1px solid #000;
 }
 
-thead th {
+table:not(.no-border) thead th {
   background-color: lightgrey;
 }
 
-table {
+table:not(.no-border) {
   border-collapse: collapse;
 }
 

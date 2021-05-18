@@ -8,3 +8,9 @@ export function matchesTypeSignature(tokens: IAssemblerToken[], types: Assembler
   }
   return true;
 }
+
+/** Label regexp */
+export const label_regex = /^[A-Za-z][A-Za-z0-9_]*$/;
+export function isValidLabel(str: string) {
+  return label_regex.test(str);
+}

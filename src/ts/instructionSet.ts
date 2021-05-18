@@ -54,7 +54,7 @@ export const instructionSet: IInstructionSet = {
   },
   // #endregion
 
-  // #region Maths (0x2-)
+  // #region Maths (inc. comparisons) (0x2-)
   ADD_REG: {
     mnemonic: "ADD",
     opcode: 0x20,
@@ -96,6 +96,28 @@ export const instructionSet: IInstructionSet = {
     opcode: 0x25,
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
     desc: "[register2] - [constant] and store in [register1]",
+    isAQA: true,
+  },
+
+  CMP_REG: {
+    mnemonic: "CMP",
+    opcode: 0x2D,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: "Compare register [register1] to [register2]",
+    isAQA: true,
+  },
+  CMP_ADDR: {
+    mnemonic: "CMP",
+    opcode: 0x2E,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: "Compare register [register] to address [address]",
+    isAQA: true,
+  },
+  CMP_CONST: {
+    mnemonic: "CMP",
+    opcode: 0x2F,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Compare register [register1] to [constant]",
     isAQA: true,
   },
   // #endregion Maths
@@ -230,97 +252,111 @@ export const instructionSet: IInstructionSet = {
   // #endregion
 
   // #region IP Manipulation (0x6-)
-  CMP_REG: {
-    mnemonic: "CMP",
-    opcode: 0x60,
-    args: [AssemblerType.Register, AssemblerType.Register],
-    desc: "Compare register [register1] to [register2]",
-    isAQA: true,
-  },
-  CMP_ADDR: {
-    mnemonic: "CMP",
-    opcode: 0x61,
-    args: [AssemblerType.Register, AssemblerType.Address],
-    desc: "Compare register [register] to address [address]",
-    isAQA: true,
-  },
-  CMP_CONST: {
-    mnemonic: "CMP",
-    opcode: 0x62,
-    args: [AssemblerType.Register, AssemblerType.Constant],
-    desc: "Compare register [register1] to [constant]",
-    isAQA: true,
-  },
-
   JMP_CONST: {
     mnemonic: "JMP",
-    opcode: 0x63,
+    opcode: 0x60,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant]",
     isAQA: false,
   },
   JMP_REG: {
     mnemonic: "JMP",
-    opcode: 0x64,
+    opcode: 0x61,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register]",
     isAQA: false,
   },
   JEQ_CONST: {
     mnemonic: "JEQ",
-    opcode: 0x65,
+    opcode: 0x62,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Equal To'",
     isAQA: false,
   },
   JEQ_REG: {
     mnemonic: "JEQ",
-    opcode: 0x66,
+    opcode: 0x63,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Equal To'",
     isAQA: false,
   },
   JNE_CONST: {
     mnemonic: "JNE",
-    opcode: 0x67,
+    opcode: 0x64,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Not Equal To'",
     isAQA: false,
   },
   JNE_REG: {
     mnemonic: "JNE",
-    opcode: 0x68,
+    opcode: 0x65,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Not Equal To'",
     isAQA: false,
   },
   JLT_REG: {
     mnemonic: "JLT",
-    opcode: 0x69,
+    opcode: 0x66,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Less Than'",
     isAQA: false,
   },
   JLT_CONST: {
     mnemonic: "JLT",
-    opcode: 0x6A,
+    opcode: 0x67,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Less Than'",
     isAQA: false,
   },
   JGT_REG: {
     mnemonic: "JGT",
-    opcode: 0x6B,
+    opcode: 0x68,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Greater Than'",
     isAQA: false,
   },
   JGT_CONST: {
     mnemonic: "JGT",
-    opcode: 0x6C,
+    opcode: 0x69,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Greater Than'",
     isAQA: false,
+  },
+  // These are translated later on to corresponding JMP commands
+  B: {
+    mnemonic: 'B',
+    opcode: 0x6A,
+    args: [AssemblerType.Label],
+    desc: 'Unconditionally branch to [label]',
+    isAQA: true,
+  },
+  BEQ: {
+    mnemonic: 'BEQ',
+    opcode: 0x6B,
+    args: [AssemblerType.Label],
+    desc: "Branch to [label] if comparison is 'equal to'",
+    isAQA: true,
+  },
+  BNE: {
+    mnemonic: 'BNE',
+    opcode: 0x6C,
+    args: [AssemblerType.Label],
+    desc: "Branch to [label] if comparison is 'not equal to'",
+    isAQA: true,
+  },
+  BLT: {
+    mnemonic: 'BLT',
+    opcode: 0x6D,
+    args: [AssemblerType.Label],
+    desc: "Branch to [label] if comparison is 'less than'",
+    isAQA: true,
+  },
+  BGT: {
+    mnemonic: 'BGT',
+    opcode: 0x6E,
+    args: [AssemblerType.Label],
+    desc: "Branch to [label] if comparison is 'greater than'",
+    isAQA: true,
   },
   // #endregion
 
