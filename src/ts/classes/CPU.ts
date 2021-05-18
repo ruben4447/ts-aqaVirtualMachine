@@ -489,6 +489,84 @@ export class CPU {
         this.writeRegister(register, result);
         break;
       }
+      case this.instructionSet.LSL_REG: {
+        // LSL register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        info.args = [register1, register2, register3];
+        const result = register2val << register3val;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(register3val);
+          info.text = `Store register ${this.registerMap[register2]} << register ${this.registerMap[register3]} (0x${hex}) in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} << 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.LSL_ADDR: {
+        // LSL register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readRegister(address);
+        info.args = [register1, register2, address];
+        const result = register2val << addressVal;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(addressVal);
+          info.text = `Store register ${this.registerMap[register2]} << value at address 0x${this.toHex(address)} (0x${hex}) in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} << 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.LSL_CONST: {
+        // LSL register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        info.args = [register1, register2, constant];
+        const result = register2val << constant;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} << constant 0x${hex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} << 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.LSR_REG: {
+        // LSR register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        info.args = [register1, register2, register3];
+        const result = register2val >> register3val;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(register3val);
+          info.text = `Store register ${this.registerMap[register2]} >> register ${this.registerMap[register3]} (0x${hex}) in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} >> 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.LSR_ADDR: {
+        // LSR register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readRegister(address);
+        info.args = [register1, register2, address];
+        const result = register2val >> addressVal;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(addressVal);
+          info.text = `Store register ${this.registerMap[register2]} >> value at address 0x${this.toHex(address)} (0x${hex}) in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} >> 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.LSR_CONST: {
+        // LSR register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        info.args = [register1, register2, constant];
+        const result = register2val >> constant;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} >> constant 0x${hex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} >> 0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
       default:
         info.termination = true;
         throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);

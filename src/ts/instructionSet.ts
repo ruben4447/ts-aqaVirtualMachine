@@ -100,7 +100,7 @@ export const instructionSet: IInstructionSet = {
   },
   // #endregion Maths
 
-  // #region Bitwise Manipulation (0x4-)
+  // #region Bitwise Manipulation (0x4-, 0x5-)
   AND_REG: {
     mnemonic: 'AND',
     opcode: 0x40,
@@ -183,6 +183,48 @@ export const instructionSet: IInstructionSet = {
     opcode: 0x4B,
     args: [AssemblerType.Register, AssemblerType.Constant],
     desc: 'NOT constant [constant] and store in [register1]',
+    isAQA: true,
+  },
+  LSL_REG: {
+    mnemonic: 'LSL',
+    opcode: 0x4C,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: 'Left shift register [register2] << register [register3] bits and store in [register1]',
+    isAQA: true,
+  },
+  LSL_ADDR: {
+    mnemonic: 'LSL',
+    opcode: 0x4D,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: 'Left shift register [register2] << value at address [address] bits and store in [register1]',
+    isAQA: true,
+  },
+  LSL_CONST: {
+    mnemonic: 'LSL',
+    opcode: 0x4E,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: 'Left shift register [register2] << [constant] bits and store in [register1]',
+    isAQA: true,
+  },
+  LSR_REG: {
+    mnemonic: 'LSR',
+    opcode: 0x50,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: 'Right shift register [register2] >> register [register3] bits and store in [register1]',
+    isAQA: true,
+  },
+  LSR_ADDR: {
+    mnemonic: 'LSR',
+    opcode: 0x51,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: 'Left shift register [register2] >> value at address [address] bits and store in [register1]',
+    isAQA: true,
+  },
+  LSR_CONST: {
+    mnemonic: 'LSR',
+    opcode: 0x52,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: 'Left shift register [register2] >> [constant] bits and store in [register1]',
     isAQA: true,
   },
   // #endregion
