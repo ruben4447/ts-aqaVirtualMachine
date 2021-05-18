@@ -143,6 +143,27 @@ export const instructionSet: IInstructionSet = {
     desc: '[register2] OR constant [constant] and store in [register1]',
     isAQA: true,
   },
+  EOR_REG: {
+    mnemonic: 'EOR',
+    opcode: 0x46,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: '[register2] XOR [register3] and store in [register1]',
+    isAQA: true,
+  },
+  EOR_ADDR: {
+    mnemonic: 'EOR',
+    opcode: 0x47,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: '[register2] XOR value at [address] and store in [register1]',
+    isAQA: true,
+  },
+  EOR_CONST: {
+    mnemonic: 'EOR',
+    opcode: 0x48,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: '[register2] XOR constant [constant] and store in [register1]',
+    isAQA: true,
+  },
   // #endregion
 
   // #region IP Manipulation (0x6-)
