@@ -15,7 +15,7 @@ SYNTAX: `#[base]<number>`
 - **optional** `base` : base of number. May be one of the following:
   - `b` : binary (base 2)
   - `o` : octal (base 8)
-  - `d` : decimal (base 10) **[DEFAUlT]**
+  - `d` : decimal (base 10) **[DEFAULT]**
   - `x` : hexadecimal (base 16)
 - `number` : the value of the constant. If decimal, value may contain a decimal point. Else, the value will be parsed as an integer.
 

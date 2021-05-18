@@ -98,13 +98,9 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
 function __app_main_() {
   __app_init_({
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
-    numType: 'int16',
-    memory: 0xFFF,
   });
-  console.clear();
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
-  tabCode.properties.assemblyCodeInput.value = "B end\nMOV r1, #1\nMOV r2, #9\nADD r3, r1, r2\nend:\nHALT";
 
   globals.tabs._.open("code");
 }
@@ -112,3 +108,9 @@ function __app_main_() {
 window.addEventListener('load', () => {
   __app_main_();
 });
+
+// TODO:
+// - Decompile option
+// - Load portion of memory into "Machine Code" textarea
+// - Upload file into "Assembly Code" textarea (insert contents into textarea)
+// - Remove "config" from Run tab and put into CPU tab. Add more options, such as "view partial translation"

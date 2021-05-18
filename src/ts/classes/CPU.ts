@@ -10,7 +10,7 @@ export class CPUError extends Error {
 }
 
 export class CPU {
-  public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
+  public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"];
 
   public readonly instructionSet: ICPUInstructionSet;
   private readonly reversedInstructionSet: IReversedCPUInstructionSet;
@@ -269,6 +269,80 @@ export class CPU {
         if (this.executionConfig.commentary) {
           const constantHex = this.toHex(constant);
           info.text = `Store register ${this.registerMap[register2]} - 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} - 0x${constantHex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.MUL_REG: {
+        // MUL register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        const result = register2val * register3val;
+        info.args = [register1, register2, register3];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} * register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.MUL_ADDR: {
+        // MUL register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readMemory(address);
+        const result = register2val * addressVal;
+        info.args = [register1, register2, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} * address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.MUL_CONST: {
+        // MUL register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        const result = register2val * constant;
+        info.args = [register1, register2, constant];
+        if (this.executionConfig.commentary) {
+          const constantHex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} * 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${constantHex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.DIV_REG: {
+        // DIV register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        const result = register2val / register3val;
+        info.args = [register1, register2, register3];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} / register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.DIV_ADDR: {
+        // DIV register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readMemory(address);
+        const result = register2val / addressVal;
+        info.args = [register1, register2, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} / address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.DIV_CONST: {
+        // DIV register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        const result = register2val / constant;
+        info.args = [register1, register2, constant];
+        if (this.executionConfig.commentary) {
+          const constantHex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} / 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${constantHex} = 0x${this.toHex(result)}`;
         }
         this.writeRegister(register1, result);
         break;

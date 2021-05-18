@@ -99,6 +99,50 @@ export const instructionSet: IInstructionSet = {
     isAQA: true,
   },
 
+  MUL_REG: {
+    mnemonic: "MUL",
+    opcode: 0x26,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: "[register2] * [register3] and store in [register1]",
+    isAQA: false,
+  },
+  MUL_ADDR: {
+    mnemonic: "MUL",
+    opcode: 0x27,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: "[register2] * value at [address] and store in [register1]",
+    isAQA: false,
+  },
+  MUL_CONST: {
+    mnemonic: "MUL",
+    opcode: 0x28,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: "[register2] * [constant] and store in [register1]",
+    isAQA: false,
+  },
+
+  DIV_REG: {
+    mnemonic: "DIV",
+    opcode: 0x29,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: "[register2] / [register3] and store in [register1]",
+    isAQA: false,
+  },
+  DIV_ADDR: {
+    mnemonic: "DIV",
+    opcode: 0x2A,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: "[register2] / value at [address] and store in [register1]",
+    isAQA: false,
+  },
+  DIV_CONST: {
+    mnemonic: "DIV",
+    opcode: 0x2B,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: "[register2] / [constant] and store in [register1]",
+    isAQA: false,
+  },
+
   CMP_REG: {
     mnemonic: "CMP",
     opcode: 0x2D,
