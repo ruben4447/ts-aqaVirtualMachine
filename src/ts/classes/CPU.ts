@@ -125,6 +125,7 @@ export class CPU {
   /** Write ArrayBuffer of any length into memory, starting at said address. */
   public loadMemoryBytes(startAddress: number, bytes: ArrayBuffer): number {
     try {
+      startAddress *= this.numType.bytes;
       const view = new DataView(bytes);
       for (let i = 0; i < view.byteLength; i++) {
         this._memory.setUint8(startAddress + i, view.getUint8(i));
@@ -565,6 +566,114 @@ export class CPU {
           info.text = `Store register ${this.registerMap[register2]} >> constant 0x${hex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} >> 0x${hex} = 0x${this.toHex(result)}`;
         }
         this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.JMP_CONST: {
+        // JMP constant
+        const constant = this.fetch();
+        info.args = [constant];
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to 0x${this.toHex(constant)}`;
+        }
+        this.writeRegister(this._ip, constant);
+        break;
+      }
+      case this.instructionSet.JMP_REG: {
+        // JMP register
+        const register = this.fetch(), registerVal = this.readRegister(register);
+        info.args = [register];
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)})`;
+        }
+        this.writeRegister(this._ip, registerVal);
+        break;
+      }
+      case this.instructionSet.JEQ_CONST: {
+        // JEQ constant
+        const constant = this.fetch();
+        info.args = [constant];
+        const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'equal to' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, constant);
+        break;
+      }
+      case this.instructionSet.JEG_REG: {
+        // JEQ register
+        const register = this.fetch(), registerVal = this.readRegister(register);
+        info.args = [register];
+        const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'equal to' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, registerVal);
+        break;
+      }
+      case this.instructionSet.JNE_CONST: {
+        // JNE constant
+        const constant = this.fetch();
+        info.args = [constant];
+        const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'not equal to' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, constant);
+        break;
+      }
+      case this.instructionSet.JNE_REG: {
+        // JNE register
+        const register = this.fetch(), registerVal = this.readRegister(register);
+        info.args = [register];
+        const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'not equal to' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, registerVal);
+        break;
+      }
+      case this.instructionSet.JLT_CONST: {
+        // JLT constant
+        const constant = this.fetch();
+        info.args = [constant];
+        const condition = this.readRegister("cmp") === CMP.LESS_THAN;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'less than' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, constant);
+        break;
+      }
+      case this.instructionSet.JLT_REG: {
+        // JLT register
+        const register = this.fetch(), registerVal = this.readRegister(register);
+        info.args = [register];
+        const condition = this.readRegister("cmp") === CMP.LESS_THAN;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'less than' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, registerVal);
+        break;
+      }
+      case this.instructionSet.JGT_CONST: {
+        // JGT constant
+        const constant = this.fetch();
+        info.args = [constant];
+        const condition = this.readRegister("cmp") === CMP.GREATER_THAN;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'greater than' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, constant);
+        break;
+      }
+      case this.instructionSet.JGT_REG: {
+        // JGT register
+        const register = this.fetch(), registerVal = this.readRegister(register);
+        info.args = [register];
+        const condition = this.readRegister("cmp") === CMP.GREATER_THAN;
+        if (this.executionConfig.commentary) {
+          info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'greater than' --> ${condition.toString().toUpperCase()}`;
+        }
+        if (condition) this.writeRegister(this._ip, registerVal);
         break;
       }
       default:

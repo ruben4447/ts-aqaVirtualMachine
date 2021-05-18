@@ -3,6 +3,7 @@ import CustomScreen from "./Screen";
 import { hex, numberToString } from "../utils/general";
 import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
+import instructionSet from "../instructionSet";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 
@@ -103,9 +104,9 @@ export class MemoryView {
     // Address values
     for (let col = 0, addr = this._startAddr; col < this._cols; col++) {
       for (let row = 0; row < this._rows; row++, addr++) {
-        let text: string;
+        let text: string, value: number;
         try {
-          const value = this.cpu.readMemory(addr);
+          value = this.cpu.readMemory(addr);
           text = numberToString(this.cpu.numType, value, this._base)
         } catch {
           text = '-';
@@ -113,6 +114,11 @@ export class MemoryView {
         if (addr === ip) {
           withinState(this.screen, S => {
             S.setForeground(pointedAtByIPFG);
+            S.writeString(text, false);
+          });
+        } else if (value == instructionSet.HALT.opcode) {
+          withinState(this.screen, S => {
+            S.setForeground('tomato');
             S.writeString(text, false);
           });
         } else {

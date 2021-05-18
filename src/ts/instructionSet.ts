@@ -251,6 +251,77 @@ export const instructionSet: IInstructionSet = {
     desc: "Compare register [register1] to [constant]",
     isAQA: true,
   },
+
+  JMP_CONST: {
+    mnemonic: "JMP",
+    opcode: 0x63,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant]",
+    isAQA: false,
+  },
+  JMP_REG: {
+    mnemonic: "JMP",
+    opcode: 0x64,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register]",
+    isAQA: false,
+  },
+  JEQ_CONST: {
+    mnemonic: "JEQ",
+    opcode: 0x65,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant] if comparison is 'Equal To'",
+    isAQA: false,
+  },
+  JEQ_REG: {
+    mnemonic: "JEQ",
+    opcode: 0x66,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register] if comparison is 'Equal To'",
+    isAQA: false,
+  },
+  JNE_CONST: {
+    mnemonic: "JNE",
+    opcode: 0x67,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant] if comparison is 'Not Equal To'",
+    isAQA: false,
+  },
+  JNE_REG: {
+    mnemonic: "JNE",
+    opcode: 0x68,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register] if comparison is 'Not Equal To'",
+    isAQA: false,
+  },
+  JLT_REG: {
+    mnemonic: "JLT",
+    opcode: 0x69,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register] if comparison is 'Less Than'",
+    isAQA: false,
+  },
+  JLT_CONST: {
+    mnemonic: "JLT",
+    opcode: 0x6A,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant] if comparison is 'Less Than'",
+    isAQA: false,
+  },
+  JGT_REG: {
+    mnemonic: "JGT",
+    opcode: 0x6B,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register] if comparison is 'Greater Than'",
+    isAQA: false,
+  },
+  JGT_CONST: {
+    mnemonic: "JGT",
+    opcode: 0x6C,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant] if comparison is 'Greater Than'",
+    isAQA: false,
+  },
   // #endregion
 
   HALT: {

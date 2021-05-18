@@ -1,3 +1,4 @@
+import Popup from "../classes/Popup";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
@@ -78,14 +79,25 @@ function generateBinaryHTML(): HTMLDivElement {
   title.insertAdjacentHTML('beforeend', 'Machine Code &nbsp;&nbsp; ');
   let btnLoad = document.createElement('button');
   btnLoad.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/comp.gray.png' />`);
-  btnLoad.innerHTML += ' Load into Memory';
-  btnLoad.addEventListener('click', () => loadMachineCodeToMemory());
+  btnLoad.innerHTML += ' Load into Memory at ';
+  const inputAddress = document.createElement("input");
+  inputAddress.type = "number";
+  inputAddress.min = "0";
+  inputAddress.value = "0";
+  inputAddress.max = globals.cpu.memorySize.toString();
+  btnLoad.appendChild(inputAddress);
+
+  btnLoad.addEventListener('click', () => {
+    let addr = parseInt(inputAddress.value);
+    if (isNaN(addr) || addr < parseInt(inputAddress.min) || addr > parseInt(inputAddress.max)) addr = 0;
+    loadMachineCodeToMemory(addr);
+  });
   title.appendChild(btnLoad);
 
   let btnDeassemble = document.createElement('button');
   btnDeassemble.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/script.png' />`);
   btnDeassemble.innerHTML += ' De-Assemble Code';
-  btnDeassemble.disabled = true; // TODO ce-compile assembly
+  btnDeassemble.disabled = true;
   btnDeassemble.addEventListener('click', () => decompileAssembly());
   title.appendChild(btnDeassemble);
 
@@ -182,9 +194,10 @@ function displayMachineCode() {
   properties.machineCodeInput.value = machineCode;
 }
 
-export function loadMachineCodeToMemory() {
+export function loadMachineCodeToMemory(startAddress?: number) {
+  if (startAddress === undefined) startAddress = 0;
+  console.log(startAddress)
   if (properties.machineCode instanceof ArrayBuffer) {
-    let startAddress = 0;
     let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode);
 
     withinState(globals.output, S => {

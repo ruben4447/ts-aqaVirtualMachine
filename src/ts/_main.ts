@@ -105,9 +105,8 @@ function __app_main_() {
   });
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
-  tabCode.properties.assemblyCodeInput.value = "ADD r8, r1, #70";
 
-  globals.tabs._.open("instructionSet");
+  globals.tabs._.open("memory");
 }
 
 window.addEventListener('load', () => {
