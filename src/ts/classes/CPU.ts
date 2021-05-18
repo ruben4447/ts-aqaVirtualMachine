@@ -451,6 +451,44 @@ export class CPU {
         this.writeRegister(register1, result);
         break;
       }
+      case this.instructionSet.MVN_REG: {
+        // MVN register1 register2
+        const register1 = this.fetch(), register2 = this.fetch();
+        const register2val = this.readRegister(register2);
+        info.args = [register1, register2];
+        const result = ~register2val;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(register2val);
+          info.text = `Store NOT register ${this.registerMap[register2]} (0x${hex}) and store in register ${this.registerMap[register1]}\n~0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.MVN_ADDR: {
+        // MVN register address
+        const register = this.fetch(), address = this.fetch();
+        const addressVal = this.readRegister(address);
+        info.args = [register, address];
+        const result = ~addressVal;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(addressVal);
+          info.text = `Store NOT value at address 0x${this.toHex(address)} (0x${hex}) and store in register ${this.registerMap[register]}\n~0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register, result);
+        break;
+      }
+      case this.instructionSet.MVN_CONST: {
+        // MVN register constant
+        const register = this.fetch(), constant = this.fetch();
+        info.args = [register, constant];
+        const result = ~constant;
+        if (this.executionConfig.commentary) {
+          const hex = this.toHex(constant);
+          info.text = `Store NOT constant 0x${this.toHex(constant)} (0x${hex}) and store in register ${this.registerMap[register]}\n~0x${hex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register, result);
+        break;
+      }
       default:
         info.termination = true;
         throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);

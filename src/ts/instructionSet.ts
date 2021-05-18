@@ -164,6 +164,27 @@ export const instructionSet: IInstructionSet = {
     desc: '[register2] XOR constant [constant] and store in [register1]',
     isAQA: true,
   },
+  MVN_REG: {
+    mnemonic: 'MVN',
+    opcode: 0x49,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: 'NOT [register2] and store in [register1]',
+    isAQA: true,
+  },
+  MVN_ADDR: {
+    mnemonic: 'MVN',
+    opcode: 0x4A,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: 'NOT value at [address] and store in [register1]',
+    isAQA: true,
+  },
+  MVN_CONST: {
+    mnemonic: 'MVN',
+    opcode: 0x4B,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: 'NOT constant [constant] and store in [register1]',
+    isAQA: true,
+  },
   // #endregion
 
   // #region IP Manipulation (0x6-)
