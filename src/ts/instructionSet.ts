@@ -122,6 +122,27 @@ export const instructionSet: IInstructionSet = {
     desc: '[register2] AND constant [constant] and store in [register1]',
     isAQA: true,
   },
+  ORR_REG: {
+    mnemonic: 'ORR',
+    opcode: 0x43,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: '[register2] OR [register3] and store in [register1]',
+    isAQA: true,
+  },
+  ORR_ADDR: {
+    mnemonic: 'ORR',
+    opcode: 0x44,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: '[register2] OR value at [address] and store in [register1]',
+    isAQA: true,
+  },
+  ORR_CONST: {
+    mnemonic: 'ORR',
+    opcode: 0x45,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: '[register2] OR constant [constant] and store in [register1]',
+    isAQA: true,
+  },
   // #endregion
 
   // #region IP Manipulation (0x6-)

@@ -340,7 +340,6 @@ export class CPU {
         this.writeRegister('cmp', comparison);
         break;
       }
-
       case this.instructionSet.AND_REG: {
         // AND register1 register2 register3
         const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
@@ -374,6 +373,43 @@ export class CPU {
         if (this.executionConfig.commentary) {
           const constantHex = this.toHex(constant);
           info.text = `Store register ${this.registerMap[register2]} AND 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} & 0x${constantHex} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.ORR_REG: {
+        // ORR register1 register2 register3
+        const register1 = this.fetch(), register2 = this.fetch(), register3 = this.fetch();
+        const register2val = this.readRegister(register2), register3val = this.readRegister(register3);
+        const result = register2val | register3val;
+        info.args = [register1, register2, register3];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} OR register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} | 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.ORR_ADDR: {
+        // ORR register1 register2 address
+        const register1 = this.fetch(), register2 = this.fetch(), address = this.fetch();
+        const register2val = this.readRegister(register2), addressVal = this.readMemory(address);
+        const result = register2val | addressVal;
+        info.args = [register1, register2, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Store register ${this.registerMap[register2]} OR address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} | 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+        }
+        this.writeRegister(register1, result);
+        break;
+      }
+      case this.instructionSet.ORR_CONST: {
+        // ORR register1 register2 constant
+        const register1 = this.fetch(), register2 = this.fetch(), constant = this.fetch();
+        const register2val = this.readRegister(register2);
+        const result = register2val | constant;
+        info.args = [register1, register2, constant];
+        if (this.executionConfig.commentary) {
+          const constantHex = this.toHex(constant);
+          info.text = `Store register ${this.registerMap[register2]} OR 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} | 0x${constantHex} = 0x${this.toHex(result)}`;
         }
         this.writeRegister(register1, result);
         break;

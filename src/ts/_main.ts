@@ -12,6 +12,7 @@ import globals from "./globals";
 import instructionSet from "./instructionSet";
 import { ICPUConfiguration } from "./types/CPU";
 import * as utils from './utils/general';
+import { loadCodeFont, withinState, writeInCentre, writeMultilineInCentre } from "./utils/Screen";
 globalThis.utils = utils;
 
 /**
@@ -20,14 +21,6 @@ globalThis.utils = utils;
  */
 export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement {
   if (globals.main) globals.main.remove(); // destroy old application
-
-  const logPad = '-'.repeat(20);
-  console.log(logPad);
-  console.log(`%cInitiating Application...`, 'color:lime;background:black;');
-  console.log(`%cCPU Data Type%c = %c${cpuConfiguration.numType}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Memory Size%c = %c${cpuConfiguration.memory}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Registers%c = %c${cpuConfiguration.registerMap}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(logPad);
 
   const main = document.createElement('div');
   main.classList.add('webapp-container');
@@ -38,10 +31,7 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
   // SET UP OUTPUT SCREEN
   const outputWrapper = document.createElement("div");
   const output = new CustomScreen(outputWrapper);
-  output.setWidth(800).setHeight(300).updateFont(F => {
-    F.family = 'consolas';
-    F.size = 12;
-  });
+  output.setWidth(800).setHeight(300);
   globals.output = output;
   outputWrapper.insertAdjacentHTML('beforeend', '<br>');
   const btnClearScreen = document.createElement("button");
@@ -86,6 +76,22 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
     outputWrapper,
   );
   globals.tabs._ = tabManager;
+
+  // Message to user
+  const logPad = '-'.repeat(20);
+  console.log(logPad);
+  console.log(`%cInitiating Application...`, 'color:lime;background:black;');
+  console.log(`%cCPU Data Type%c = %c${cpuConfiguration.numType}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Memory Size%c = %c${cpuConfiguration.memory}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Registers%c = %c${cpuConfiguration.registerMap}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(logPad);
+  withinState(globals.output, S => {
+    S.reset();
+    loadCodeFont(S);
+
+    S.setForeground('lime');
+    writeMultilineInCentre(S, 'AQA Virtual Processor created!\nSee \'CPU\' tab for more'.toUpperCase());
+  });
 
   return main;
 }

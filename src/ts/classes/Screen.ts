@@ -13,8 +13,6 @@ export class CustomScreen {
   private _ctx: CanvasRenderingContext2D;
   public x: number = 0; // X-position
   public y: number = 0; // Y-position
-  private _charWidth: number; // Character width
-  private _charHeight: number; // Character height
   private _foreground: ScreenColour;
   private _background: ScreenColour;
   private _savedStates: IScreenState[] = [];
