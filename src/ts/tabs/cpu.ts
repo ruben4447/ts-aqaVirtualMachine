@@ -111,7 +111,8 @@ function generateHTML(): HTMLDivElement {
   const memoryBytes = globals.cpu.memorySizeBytes();
   tbody.insertAdjacentHTML('beforeend', `<tr><th>Capacity (bytes)</th><td><code>${seperateNumber(memoryBytes)} (${numberToString(globals.cpu.numType, memoryBytes, globals.base)})<sub>${globals.base}</sub></code></td></tr>`);
 
-  const usablePercent = (maxVal / globals.cpu.memorySize) * 100;
+  let usablePercent = (maxVal / globals.cpu.memorySize) * 100;
+  if (usablePercent >= 100) usablePercent = 100;
   tbody.insertAdjacentHTML('beforeend', `<tr><th>Addressable Memory</th><td><code>${seperateNumber(maxVal)} addresses (${usablePercent.toFixed(2)}%)</code></td></tr>`);
 
   // Registers
@@ -147,6 +148,79 @@ function generateHTML(): HTMLDivElement {
       updateCPU(undefined, undefined, [...globals.cpu.registerMap, name]);
     }
   });
+
+  // Options
+  div = document.createElement("div");
+  wrapper.appendChild(div);
+  div.insertAdjacentHTML('beforeend', '<h3>Options</h3>');
+  table = document.createElement('table');
+  div.appendChild(table);
+  tbody = document.createElement('tbody');
+  table.appendChild(tbody);
+
+  // Safe NULL
+  tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='HALT program execution on a NULL instruction'>Safe NULL</abbr></th>`);
+  td = document.createElement("td");
+  tr.appendChild(td);
+  const inputSafeNull = document.createElement("input");
+  inputSafeNull.type = "checkbox";
+  inputSafeNull.checked = globals.cpu.executionConfig.haltOnNull;
+  inputSafeNull.addEventListener('change', () => globals.cpu.executionConfig.haltOnNull = inputSafeNull.checked);
+  td.appendChild(inputSafeNull);
+
+  // Execution Feedback - Commentary
+  tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='Provide commentary in execution feedback'>Commentary</abbr></th>`);
+  td = document.createElement("td");
+  tr.appendChild(td);
+  const inputCommentary = document.createElement("input");
+  inputCommentary.type = "checkbox";
+  inputCommentary.checked = globals.cpu.executionConfig.commentary;
+  inputCommentary.addEventListener('change', () => globals.cpu.executionConfig.commentary = inputCommentary.checked);
+  td.appendChild(inputCommentary);
+
+  // Assemble program - memory offset
+  tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='When loading a program into memory, what address should it be inserted at?'>Program Start Address</abbr></th>`);
+  td = document.createElement("td");
+  tr.appendChild(td);
+  const inputInsertAddress = document.createElement("input");
+  inputInsertAddress.type = "number";
+  inputInsertAddress.min = '0';
+  inputInsertAddress.value = globals.assembler.startAddress.toString();
+  inputInsertAddress.max = globals.cpu.memorySize.toString();
+  inputInsertAddress.addEventListener('change', () => {
+    let addr = parseInt(inputInsertAddress.value);
+    if (isNaN(addr) || !isFinite(addr) || addr < parseInt(inputInsertAddress.min) || addr >= parseInt(inputInsertAddress.max)) {
+      inputInsertAddress.value = globals.assembler.startAddress.toString();
+    } else {
+      globals.assembler.startAddress = addr;
+      inputInsertAddress.value = addr.toString();
+    }
+  });
+  td.appendChild(inputInsertAddress);
+
+  // Show partial translation
+  tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='Show Partial Translation section in "code" tab'>Show Partial Translation</abbr></th>`);
+  td = document.createElement("td");
+  tr.appendChild(td);
+  const inputPartialTranslation = document.createElement("input");
+  inputPartialTranslation.type = "checkbox";
+  inputPartialTranslation.checked = globals.tabs.code.partailTranslationWrapper.style.display !== "none";
+  inputPartialTranslation.addEventListener('change', () => {
+    if (inputPartialTranslation.checked) {
+      globals.tabs.code.partailTranslationWrapper.style.display = "block";
+    } else {
+      globals.tabs.code.partailTranslationWrapper.style.display = "none";
+    }
+  });
+  td.appendChild(inputPartialTranslation);
 
   return wrapper;
 }

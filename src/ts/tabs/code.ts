@@ -1,8 +1,7 @@
-import Popup from "../classes/Popup";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { numberToString } from "../utils/general";
+import { downloadTextFile, numberToString, readTextFile } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -13,6 +12,7 @@ export const info: ITabInfo = {
 
 export const properties: ICodeTabProperties = {
   assemblyCodeInput: undefined,
+  partailTranslationWrapper: undefined,
   partialTranslatedInput: undefined,
   labelTable: undefined,
   machineCodeInput: undefined,
@@ -35,6 +35,32 @@ function generateAssemblyHTML(): HTMLDivElement {
 
   let p = document.createElement("p");
   wrapper.appendChild(p);
+
+  // Actual file upload
+  let inputUpload = document.createElement('input');
+  inputUpload.type = 'file';
+  inputUpload.accept = '.asm,.txt';
+  inputUpload.addEventListener('change', async () => {
+    let text = await readTextFile(inputUpload.files[0]);
+    textarea.value = text;
+    inputUpload.value = ''; // Clear files
+  });
+  
+  let inputUploadBtn = document.createElement('button');
+  inputUploadBtn.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/up.png' /> Upload File`);
+  inputUploadBtn.addEventListener('click', () => inputUpload.click());
+  p.appendChild(inputUploadBtn);
+  p.insertAdjacentHTML('beforeend', ` &nbsp; `);
+
+  const btnDownload = document.createElement("button");
+  btnDownload.insertAdjacentHTML('beforeend', "<img src='http://bluecedars1.dyndns.org/icons/down.png' /> Download");
+  btnDownload.addEventListener('click', () => {
+    downloadTextFile(textarea.value, `AssemblyCode-${Date.now()}.asm`);
+  });
+  p.appendChild(btnDownload);
+
+  p = document.createElement("p");
+  wrapper.appendChild(p);
   p.insertAdjacentHTML('beforeend', 'Insert HALT at end of program ');
   const inputInsertHalt = document.createElement("input");
   inputInsertHalt.type = "checkbox";
@@ -56,6 +82,7 @@ function generateAssemblyHTML(): HTMLDivElement {
 function generatePartialHTML() {
   const wrapper = document.createElement('div');
   wrapper.classList.add('input-partial-wrapper');
+  properties.partailTranslationWrapper = wrapper;
 
   const title = document.createElement('h2');
   wrapper.appendChild(title);
@@ -109,18 +136,9 @@ function generateBinaryHTML(): HTMLDivElement {
   title.insertAdjacentHTML('beforeend', 'Machine Code &nbsp;&nbsp; ');
   let btnLoad = document.createElement('button');
   btnLoad.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/comp.gray.png' />`);
-  btnLoad.innerHTML += ' Load into Memory at ';
-  const inputAddress = document.createElement("input");
-  inputAddress.type = "number";
-  inputAddress.min = "0";
-  inputAddress.value = "0";
-  inputAddress.max = globals.cpu.memorySize.toString();
-  btnLoad.appendChild(inputAddress);
-
+  btnLoad.innerHTML += ' Load into Memory';
   btnLoad.addEventListener('click', () => {
-    let addr = parseInt(inputAddress.value);
-    if (isNaN(addr) || addr < parseInt(inputAddress.min) || addr > parseInt(inputAddress.max)) addr = 0;
-    loadMachineCodeToMemory(addr);
+    loadMachineCodeToMemory(globals.assembler.startAddress);
   });
   title.appendChild(btnLoad);
 

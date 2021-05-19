@@ -65,6 +65,7 @@ export class Assembler {
   private _ast: IAssemblyLine[];
   private _bytes: ArrayBuffer;
   private _labels: ILabelMap = {};
+  public startAddress = 0;
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
@@ -186,7 +187,7 @@ export class Assembler {
    */
   private _astToNums(ast: IAssemblyLine[]): number[] {
     const nums: number[] = [];
-    let address = 0; // Current address
+    let address = this.startAddress; // Current address
     this._labels = {};
 
     // Resolve labels

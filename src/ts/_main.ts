@@ -96,11 +96,34 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
 }
 
 function __app_main_() {
+  tabCode.properties.insertHalt = false;
   __app_init_({
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
   });
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
+  tabCode.properties.assemblyCodeInput.value = `' Execute fibonacci sequence
+' r5 -> how many cycles?
+' AT END r8 -> result after n cycles
+
+start:
+MOV r1, #00 ' a
+MOV r2, #01 ' b
+MOV r5, #13 ' Total Cycles
+MOV r6, #00 ' Current cycle
+SUB r5, r5, #1
+loop:
+MOV r3, r2 ' Move b to tmp
+ADD r2, r1, r2 ' b = a + b
+SUB r1, r2, r1 ' a = b - a
+ADD r6, r6, #1 ' Increment current cycle
+CMP r6, r5
+BLT loop ' current cycle < total cycles
+end:
+MOV r8, r2 ' ANSWER is 'b'
+HALT`;
+  tabCode.compileAssembly();
+  tabCode.properties.assemblyCodeInput.value = '';
 
   globals.tabs._.open("code");
 }
@@ -112,5 +135,3 @@ window.addEventListener('load', () => {
 // TODO:
 // - Decompile option
 // - Load portion of memory into "Machine Code" textarea
-// - Upload file into "Assembly Code" textarea (insert contents into textarea)
-// - Remove "config" from Run tab and put into CPU tab. Add more options, such as "view partial translation"

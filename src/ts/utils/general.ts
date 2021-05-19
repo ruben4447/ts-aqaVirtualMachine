@@ -195,3 +195,28 @@ export const createLink = (html?: string): HTMLSpanElement => {
 export function seperateNumber(n: number, seperator = ','): string {
   return n.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, seperator);
 }
+
+export async function readTextFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+export function downloadTextFile(text: string, fname: string) {
+  let data = new Blob([text], { type: 'text/plain' });
+  let url = window.URL.createObjectURL(data);
+  downloadLink(url, fname);
+};
+
+export function downloadLink(href: string, fname: string) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.setAttribute('download', fname);
+  a.click();
+  a.remove();
+};

@@ -15,7 +15,6 @@ export const info: ITabInfo = {
   displayMulti: true,
 };
 
-
 export const properties: IRunTabProperties = {
   feedbackScreen: undefined,
   feedbackScreenDimensions: [700, 200],
@@ -310,46 +309,13 @@ function displayExecInfo(info: IExecuteRecord) {
   }
 }
 
-function initOptionsPopup() {
-  properties.optionsPopup = new Popup('CPU Execution Configuration');
-
-  const body = document.createElement("div");
-  properties.optionsPopup.setContent(body);
-  let p: HTMLParagraphElement;
-
-  // HALT ON NULL
-  p = document.createElement("p");
-  body.appendChild(p);
-  p.insertAdjacentHTML('beforeend', `<abbr title="Halt programe execution on NULL command (default behaviour is to skip it)">Halt on NULL</abbr>: `);
-  const checkboxHaltOnNull = document.createElement("input");
-  checkboxHaltOnNull.type = "checkbox";
-  checkboxHaltOnNull.checked = globals.cpu.executionConfig.haltOnNull;
-  checkboxHaltOnNull.addEventListener('change', () => globals.cpu.executionConfig.haltOnNull = checkboxHaltOnNull.checked);
-  p.appendChild(checkboxHaltOnNull);
-
-  // COMMENTARY
-  p = document.createElement("p");
-  body.appendChild(p);
-  p.insertAdjacentHTML('beforeend', `<abbr title="Show text description of what the executed command did">Commentary</abbr>: `);
-  const checkboxCommentary = document.createElement("input");
-  checkboxCommentary.type = "checkbox";
-  checkboxCommentary.checked = globals.cpu.executionConfig.commentary;
-  checkboxCommentary.addEventListener('change', () => globals.cpu.executionConfig.commentary = checkboxCommentary.checked);
-  p.appendChild(checkboxCommentary);
-}
-
 export function init() {
   const content = document.createElement('div');
   info.content = content;
 
-  initOptionsPopup();
 
   const title = document.createElement("h2");
   title.innerText = 'Execute code in memory at instruction pointer  ';
-  const btnOptions = document.createElement("button");
-  btnOptions.innerText = 'Config';
-  btnOptions.addEventListener('click', () => properties.optionsPopup.show());
-  title.appendChild(btnOptions);
   content.appendChild(title);
 
   const flexContainer = document.createElement("div");
