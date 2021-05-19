@@ -1,7 +1,8 @@
+import { AssemblerError } from "../classes/Assembler";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { downloadTextFile, numberToString, readTextFile } from "../utils/general";
+import { arrayToBuffer, downloadTextFile, numberFromString, numberToString, readTextFile } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -58,6 +59,12 @@ function generateAssemblyHTML(): HTMLDivElement {
     downloadTextFile(textarea.value, `AssemblyCode-${Date.now()}.asm`);
   });
   p.appendChild(btnDownload);
+
+  p.insertAdjacentHTML('beforeend', ` &nbsp; `);
+  const btnClearAssembly = document.createElement('button');
+  btnClearAssembly.innerText = 'Clear';
+  btnClearAssembly.addEventListener('click', () => textarea.value = '');
+  p.appendChild(btnClearAssembly);
 
   p = document.createElement("p");
   wrapper.appendChild(p);
@@ -145,16 +152,20 @@ function generateBinaryHTML(): HTMLDivElement {
   let btnDeassemble = document.createElement('button');
   btnDeassemble.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/script.png' />`);
   btnDeassemble.innerHTML += ' De-Assemble Code';
-  btnDeassemble.disabled = true;
-  btnDeassemble.addEventListener('click', () => decompileAssembly());
+  btnDeassemble.addEventListener('click', () => decompileMachineCode());
   title.appendChild(btnDeassemble);
 
-
   const textarea = document.createElement('textarea');
-  textarea.readOnly = true;
   properties.machineCodeInput = textarea;
   textarea.rows = 10;
   textarea.cols = 100;
+  textarea.addEventListener('change', () => {
+    // Transform bytes to arraybuffer
+    let byteString = textarea.value.replace(/\s+/g, ' ').split(/\s/g);
+    let bytes = byteString.filter(x => x.length > 0).map(x => numberFromString(globals.cpu.numType, x, 16));
+    let buffer = arrayToBuffer(bytes, globals.cpu.numType);
+    properties.machineCode = buffer;
+  });
   wrapper.appendChild(textarea);
 
   return wrapper;
@@ -207,9 +218,29 @@ export function compileAssembly() {
   }
 }
 
-export function decompileAssembly() {
-  // TODO decompile assembly
-  globalThis.alert(`Not implemented.`);
+export function decompileMachineCode() {
+  let buffer = properties.machineCode;
+  let error: AssemblerError;
+
+  try {
+    globals.assembler.deAssemble(buffer);
+  } catch (e) {
+    console.error(e);
+    error = e;
+  }
+
+  if (error) {
+    properties.machineCode = undefined;
+    withinState(globals.output, S => {
+      S.reset();
+      loadCodeFont(S);
+      S.setForeground(errorForeground).setBackground(errorBackground).clear();
+      writeMultilineString(S, error.getErrorMessage());
+    });
+  } else {
+    let assembly = globals.assembler.getAssemblyCode();
+    properties.assemblyCodeInput.value = `' Decompiled from machine code\n` + assembly;
+  }
 }
 
 function displayPartialTranslation() {
@@ -245,7 +276,6 @@ function displayMachineCode() {
 
 export function loadMachineCodeToMemory(startAddress?: number) {
   if (startAddress === undefined) startAddress = 0;
-  console.log(startAddress)
   if (properties.machineCode instanceof ArrayBuffer) {
     let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode);
 

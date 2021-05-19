@@ -1,7 +1,7 @@
 import CPU from "./CPU";
 import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine } from "../types/Assembler";
 import { isValidLabel, label_regex, matchesTypeSignature } from "../utils/Assembler";
-import { arrayToBuffer, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
+import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
 
 export class AssemblerError extends Error {
@@ -350,6 +350,67 @@ export class Assembler {
     } else {
       return this._labels[label];
     }
+  }
+
+  /**
+   * De-compile code
+   */
+  public deAssemble(bytes: ArrayBuffer): void {
+    this._bytes = bytes;
+    this._assembly = '';
+    const numbers = bufferToArray(bytes, this._cpu.numType);
+    const lines: string[] = [];
+
+    for (let i = 0; i < numbers.length;) {
+      try {
+        const number = numbers[i], mnemonic = this._cpu.getMnemonic(number);
+        if (mnemonic) {
+          try {
+            const info = this._imap[mnemonic], line = [info.mnemonic];
+            console.log(number, mnemonic)
+            i++;
+
+            for (let j = 0; j < info.args.length; i++, j++) {
+              const number = numbers[i];
+              try {
+                if (info.args[j] === AssemblerType.Register) {
+                  let register = this._cpu.registerMap[number];
+                  if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
+                  line.push(register);
+                } else if (info.args[j] === AssemblerType.Constant) {
+                  line.push('#' + number);
+                } else {
+                  line.push(number.toString());
+                }
+              } catch (e) {
+                if (e instanceof AssemblerError) {
+                  e.insertMessage(`${mnemonic}: error whilst decoding instruction ${j + 1} of type <${AssemblerType[info.args[j]]}> : 0x${this._cpu.toHex(number)}`);
+                }
+                throw e;
+              }
+            }
+
+            lines.push(line.join(' '));
+          } catch (e) {
+            if (e instanceof AssemblerError) {
+              e.insertMessage(`Error whilst decoding instruction ${mnemonic} (0x${this._cpu.toHex(number)}):`);
+            }
+            throw e;
+          }
+        } else {
+          throw new AssemblerError(`Unknown opcode 0x${number.toString(16)} - cannot resolve to mnemonic`, this._cpu.toHex(number));
+        }
+      } catch (e) {
+        if (e instanceof AssemblerError) {
+          e.insertMessage(`Fatal error whilst decoding byte 0x${this._cpu.toHex(numbers[i])} at offset +0x${i.toString(16)}:`);
+          e.setUnderlineString(numbers.map(n => this._cpu.toHex(n)).join(' '));
+          e.lineNumber = 1;
+        }
+        throw e;
+      }
+    }
+
+    this._assembly = lines.join('\n');
   }
 
   /** From instruction set, generate instruction SET for the CPU */

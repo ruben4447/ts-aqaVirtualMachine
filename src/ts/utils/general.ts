@@ -165,6 +165,18 @@ export function arrayToBuffer(array: number[], type: INumberType): ArrayBuffer {
   return buffer;
 }
 
+/**
+ * Turn array buffer to array of numbers
+ */
+export function bufferToArray(buffer: ArrayBuffer, type: INumberType): number[] {
+  const view = new DataView(buffer), numbers: number[] = [];
+  for (let i = 0; i < view.byteLength; i += type.bytes) {
+    let num = view[type.getMethod](i);
+    numbers.push(num);
+  }
+  return numbers;
+}
+
 /** Try to remove child from parent, but doesn't throw error on failure. */
 export function removeChild(parent: HTMLElement, child: HTMLElement): boolean {
   try {
