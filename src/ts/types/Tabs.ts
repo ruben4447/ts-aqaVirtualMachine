@@ -24,6 +24,7 @@ export interface ICodeTabProperties {
   machineCode: ArrayBuffer;
   machineCodeInput: HTMLTextAreaElement;
   insertHalt: boolean;
+  deassembleUseLabels: boolean;
 }
 
 /** Properties for tab:"memory" */

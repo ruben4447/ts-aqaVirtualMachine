@@ -107,12 +107,6 @@ function __app_main_() {
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
 
   globals.tabs._.open("code");
-
-  tabCode.properties.assemblyCodeInput.value = "MOV r8, r1\nHALT";
-  tabCode.compileAssembly();
-  tabCode.loadMachineCodeToMemory(0);
-  tabCode.properties.assemblyCodeInput.value = "";
-  tabCode.properties.machineCodeInput.value = "";
 }
 
 window.addEventListener('load', () => {

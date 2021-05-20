@@ -20,6 +20,7 @@ export const properties: ICodeTabProperties = {
   machineCodeInput: undefined,
   machineCode: undefined,
   insertHalt: true,
+  deassembleUseLabels: true,
 };
 
 function generateAssemblyHTML(): HTMLDivElement {
@@ -265,9 +266,10 @@ export function compileAssembly() {
 export function decompileMachineCode() {
   let buffer = properties.machineCode;
   let error: AssemblerError;
+  globals.output.reset();
 
   try {
-    globals.assembler.deAssemble(buffer);
+    globals.assembler.deAssemble(buffer, properties.deassembleUseLabels);
   } catch (e) {
     console.error(e);
     error = e;
@@ -284,6 +286,22 @@ export function decompileMachineCode() {
   } else {
     let assembly = globals.assembler.getAssemblyCode();
     properties.assemblyCodeInput.value = `' Decompiled from machine code\n` + assembly;
+
+    globals.output.reset();
+    withinState(globals.output, S => {
+      S.setForeground('lightblue');
+      loadCodeFont(S);
+
+      S.x = 15;
+      let dy = S.measureText('A').height * 1.5;
+      S.y = 10;
+
+      let lines = [`De-assembled code (${buffer.byteLength} bytes)`, `... Format: ${globals.cpu.numType.type}`, `... Words: ${buffer.byteLength / globals.cpu.numType.bytes}`, `... Word Size: ${globals.cpu.numType.bytes} bytes`];
+      for (let line of lines) {
+        S.writeString(line, false);
+        S.y += dy;
+      }
+    });
   }
 }
 

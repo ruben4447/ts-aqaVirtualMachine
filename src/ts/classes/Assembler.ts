@@ -354,42 +354,78 @@ export class Assembler {
 
   /**
    * De-compile code
+   * @param useLabels - Transform JUMP commands to BRANCH commands with labels?
    */
-  public deAssemble(bytes: ArrayBuffer): void {
+  public deAssemble(bytes: ArrayBuffer, useLabels: boolean = false): void {
     this._bytes = bytes;
     this._assembly = '';
     const numbers = bufferToArray(bytes, this._cpu.numType);
-    const lines: string[] = [];
+    const lines: string[][] = [];
+    this._labels = {};
+    let currentLabelN = 1;
 
     for (let i = 0; i < numbers.length;) {
       try {
         const number = numbers[i], mnemonic = this._cpu.getMnemonic(number);
         if (mnemonic) {
           try {
-            const info = this._imap[mnemonic], line = [info.mnemonic];
+            let info = this._imap[mnemonic], line = [info.mnemonic], skipMain = false;
             i++;
 
-            for (let j = 0; j < info.args.length; i++, j++) {
-              const number = numbers[i];
-              try {
-                if (info.args[j] === AssemblerType.Register) {
-                  let register = this._cpu.registerMap[number];
-                  if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
-                  line.push(register);
-                } else if (info.args[j] === AssemblerType.Constant) {
-                  line.push('#' + number);
-                } else {
-                  line.push(number.toString());
-                }
-              } catch (e) {
-                if (e instanceof AssemblerError) {
-                  e.insertMessage(`${mnemonic}: error whilst decoding instruction ${j + 1} of type <${AssemblerType[info.args[j]]}> : 0x${this._cpu.toHex(number)}`);
-                }
-                throw e;
+            if (useLabels) {
+              if (mnemonic === 'JMP_CONST') {
+                skipMain = true;
+                let label = `label${currentLabelN++}`;
+                this._labels[label] = numbers[i++];
+                line = ['B', label];
+              } else if (mnemonic === 'JEQ_CONST') {
+                skipMain = true;
+                let label = `label${currentLabelN++}`;
+                this._labels[label] = numbers[i++];
+                line = ['BEQ', label];
+              } else if (mnemonic === 'JNE_CONST') {
+                skipMain = true;
+                let label = `label${currentLabelN++}`;
+                this._labels[label] = numbers[i++];
+                line = ['BNE', label];
+              } else if (mnemonic === 'JLT_CONST') {
+                skipMain = true;
+                let label = `label${currentLabelN++}`;
+                this._labels[label] = numbers[i++];
+                line = ["BLT", label];
+              } else if (mnemonic === 'JGT_CONST') {
+                skipMain = true;
+                let label = `label${currentLabelN++}`;
+                this._labels[label] = numbers[i++];
+                line = ["BGT", label];
               }
             }
 
-            lines.push(line.join(' '));
+            // "Main Block" -> parse arguments
+            if (!skipMain) {
+              for (let j = 0; j < info.args.length; i++, j++) {
+                const number = numbers[i];
+                if (number === undefined) throw new AssemblerError(`${mnemonic} expects ${info.args.length} arguments - could not fetch argument ${j + 1}`, this._cpu.toHex(info.opcode));
+                try {
+                  if (info.args[j] === AssemblerType.Register) {
+                    let register = this._cpu.registerMap[number];
+                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
+                    line.push(register);
+                  } else if (info.args[j] === AssemblerType.Constant) {
+                    line.push('#' + number);
+                  } else {
+                    line.push(number.toString());
+                  }
+                } catch (e) {
+                  if (e instanceof AssemblerError) {
+                    e.insertMessage(`${mnemonic}: error whilst decoding instruction ${j + 1} of type <${AssemblerType[info.args[j]]}> : 0x${this._cpu.toHex(number)}`);
+                  }
+                  throw e;
+                }
+              }
+            }
+
+            lines.push(line);
           } catch (e) {
             if (e instanceof AssemblerError) {
               e.insertMessage(`Error whilst decoding instruction ${mnemonic} (0x${this._cpu.toHex(number)}):`);
@@ -409,7 +445,20 @@ export class Assembler {
       }
     }
 
-    this._assembly = lines.join('\n');
+    // Place labels into array
+    for (let label in this._labels) {
+      if (this._labels.hasOwnProperty(label)) {
+        for (let i = 0, k = 0; i < lines.length; i++) {
+          for (let j = 0; j < lines[i].length; j++, k++) {
+            if (k === this._labels[label]) {
+              lines.splice(i, 0, [label + ':']);
+            }
+          }
+        }
+      }
+    }
+
+    this._assembly = lines.map(arr => arr.join(' ')).join('\n');
   }
 
   /** From instruction set, generate instruction SET for the CPU */

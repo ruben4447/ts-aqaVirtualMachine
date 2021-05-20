@@ -222,6 +222,20 @@ function generateHTML(): HTMLDivElement {
   });
   td.appendChild(inputPartialTranslation);
 
+  // De-Assembler: translate JUMP commands to BRANCH commands w/ labels?
+  tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='When deassembling machine code, translate JUMP commands into BRANCH commands with labels in the decompiled assembly code?'>Deassembler: labels</abbr></th>`);
+  td = document.createElement("td");
+  tr.appendChild(td);
+  const inputUseLabels = document.createElement("input");
+  inputUseLabels.type = "checkbox";
+  inputUseLabels.checked = globals.tabs.code.deassembleUseLabels;
+  inputUseLabels.addEventListener('change', () => {
+    globals.tabs.code.deassembleUseLabels = inputUseLabels.checked;
+  });
+  td.appendChild(inputUseLabels);
+
   return wrapper;
 }
 
