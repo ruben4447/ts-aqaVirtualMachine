@@ -54,7 +54,7 @@ export const instructionSet: IInstructionSet = {
   },
   // #endregion
 
-  // #region Maths (inc. comparisons) (0x2-)
+  // #region Maths (0x2-)
   ADD_REG: {
     mnemonic: "ADD",
     opcode: 0x20,
@@ -143,30 +143,30 @@ export const instructionSet: IInstructionSet = {
     isAQA: false,
   },
 
-  CMP_REG: {
-    mnemonic: "CMP",
+  EXP_REG: {
+    mnemonic: "EXP",
+    opcode: 0x2C,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: "[register2] ** [register3] and store in [register1]",
+    isAQA: false,
+  },
+  EXP_ADDR: {
+    mnemonic: "EXP",
     opcode: 0x2D,
-    args: [AssemblerType.Register, AssemblerType.Register],
-    desc: "Compare register [register1] to [register2]",
-    isAQA: true,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: "[register2] ** value at [address] and store in [register1]",
+    isAQA: false,
   },
-  CMP_ADDR: {
-    mnemonic: "CMP",
+  EXP_CONST: {
+    mnemonic: "EXP",
     opcode: 0x2E,
-    args: [AssemblerType.Register, AssemblerType.Address],
-    desc: "Compare register [register] to address [address]",
-    isAQA: true,
-  },
-  CMP_CONST: {
-    mnemonic: "CMP",
-    opcode: 0x2F,
-    args: [AssemblerType.Register, AssemblerType.Constant],
-    desc: "Compare register [register1] to [constant]",
-    isAQA: true,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: "[register2] ** [constant] and store in [register1]",
+    isAQA: false,
   },
   // #endregion Maths
 
-  // #region Bitwise Manipulation (0x4-, 0x5-)
+  // #region Bitwise Manipulation and Comparisons (0x4-, 0x5-)
   AND_REG: {
     mnemonic: 'AND',
     opcode: 0x40,
@@ -291,6 +291,27 @@ export const instructionSet: IInstructionSet = {
     opcode: 0x52,
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
     desc: 'Left shift register [register2] >> [constant] bits and store in [register1]',
+    isAQA: true,
+  },
+  CMP_REG: {
+    mnemonic: "CMP",
+    opcode: 0x53,
+    args: [AssemblerType.Register, AssemblerType.Register],
+    desc: "Compare register [register1] to [register2]",
+    isAQA: true,
+  },
+  CMP_ADDR: {
+    mnemonic: "CMP",
+    opcode: 0x54,
+    args: [AssemblerType.Register, AssemblerType.Address],
+    desc: "Compare register [register] to address [address]",
+    isAQA: true,
+  },
+  CMP_CONST: {
+    mnemonic: "CMP",
+    opcode: 0x55,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Compare register [register1] to [constant]",
     isAQA: true,
   },
   // #endregion

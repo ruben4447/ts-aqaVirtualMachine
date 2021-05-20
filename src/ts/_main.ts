@@ -99,14 +99,19 @@ function __app_main_() {
   tabCode.properties.insertHalt = false;
   __app_init_({
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
-    numType: 'uint8',
+    numType: 'float32',
   });
   console.clear();
   tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
-
+  
   globals.tabs._.open("code");
+
+  tabCode.properties.assemblyCodeInput.value = "MOV r1, #02\nEXP r1, r1, #05\nHALT";
+  tabCode.compileAssembly();
+  tabCode.loadMachineCodeToMemory(0);
+  globals.tabs._.open("run");
 }
 
 window.addEventListener('load', () => {
@@ -114,4 +119,3 @@ window.addEventListener('load', () => {
 });
 
 // TODO:
-// - Decompile option (DONE. Now with labels [make option?])
