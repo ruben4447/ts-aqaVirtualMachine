@@ -367,7 +367,6 @@ export class Assembler {
         if (mnemonic) {
           try {
             const info = this._imap[mnemonic], line = [info.mnemonic];
-            console.log(number, mnemonic)
             i++;
 
             for (let j = 0; j < info.args.length; i++, j++) {

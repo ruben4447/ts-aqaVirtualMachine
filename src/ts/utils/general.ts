@@ -232,3 +232,42 @@ export function downloadLink(href: string, fname: string) {
   a.click();
   a.remove();
 };
+
+/**
+ * Generate input for a number along with a combobox containing common bases
+ * Provide callback for input:change event
+ */
+export function insertNumericalBaseInput(parent: HTMLElement, callback: (n: number) => void): HTMLInputElement {
+  let base = 16;
+
+  const fn = () => {
+    let num = parseInt(input.value, base);
+    callback(num);
+  };
+  
+  const wrapper = document.createElement('span');
+  parent.appendChild(wrapper);
+  wrapper.classList.add('multi-base-input');
+
+  let selectBase = document.createElement('select');
+  selectBase.insertAdjacentHTML('beforeend', `<option value='16' title='Hexadecimal'>0x</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='10' title='Decimal'>0d</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='2' title='Binary'>0b</option>`);
+  selectBase.insertAdjacentHTML('beforeend', `<option value='8' title='Octal'>0o</option>`);
+  selectBase.addEventListener('change', () => {
+    let oldValue = parseInt(input.value, base);
+    base = parseInt(selectBase.value);
+    let newValue = oldValue.toString(base);
+    input.value = newValue;
+    fn();
+  });
+  wrapper.appendChild(selectBase);
+
+  let input = document.createElement("input");
+  input.type = "text";
+  input.value = "0";
+  input.addEventListener('change', () => fn());
+  wrapper.appendChild(input);
+
+  return input;
+}

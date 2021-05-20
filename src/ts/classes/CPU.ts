@@ -96,6 +96,17 @@ export class CPU {
     }
   }
 
+  /** Read from region of memory */
+  public readMemoryRegion(startAddress: number, words: number): ArrayBuffer {
+    const buffer = new ArrayBuffer(words * this.numType.bytes), view = new DataView(buffer);
+    for (let offset = 0; offset < words; offset++) {
+      const actualOffset = offset * this.numType.bytes;
+      let value = this._memory[this.numType.getMethod](startAddress + actualOffset);
+      view[this.numType.setMethod](actualOffset, value);
+    }
+    return buffer;
+  }
+
   /** Write value to memory */
   public writeMemory(address: number, value: number): void {
     try {

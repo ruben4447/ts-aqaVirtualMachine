@@ -1,9 +1,10 @@
 import { AssemblerError } from "../classes/Assembler";
+import Popup from "../classes/Popup";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { arrayToBuffer, downloadTextFile, numberFromString, numberToString, readTextFile } from "../utils/general";
-import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
+import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, readTextFile } from "../utils/general";
+import { errorBackground, errorForeground, loadCodeFont, withinState, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
   content: undefined,
@@ -154,6 +155,49 @@ function generateBinaryHTML(): HTMLDivElement {
   btnDeassemble.innerHTML += ' De-Assemble Code';
   btnDeassemble.addEventListener('click', () => decompileMachineCode());
   title.appendChild(btnDeassemble);
+
+  let btnLoadFromMemory = document.createElement('button');
+  btnLoadFromMemory.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/diskimg.png' />`);
+  btnLoadFromMemory.innerHTML += ' Load from Memory';
+  btnLoadFromMemory.title = 'Load bytes from memory';
+  btnLoadFromMemory.addEventListener('click', () => {
+    let startAddress = 0, words = 1;
+
+    const content = document.createElement("div");
+    let p = document.createElement("p");
+    content.appendChild(p);
+    p.insertAdjacentHTML('beforeend', 'Starting Address: ');
+    const inputStartAddress = insertNumericalBaseInput(p, n => startAddress = n);
+    inputStartAddress.value = startAddress.toString(16);
+
+    p = document.createElement("p");
+    content.appendChild(p);
+    p.insertAdjacentHTML('beforeend', 'Word Count: ');
+    const inputWordCount = insertNumericalBaseInput(p, n => words = n);
+    inputWordCount.value = words.toString(16);
+
+    const button = document.createElement('button');
+    button.innerText = "Load Bytes";
+    button.addEventListener('click', () => {
+      // console.log(`Start at ${startAddress} and extract ${words} words`);
+      try {
+        const buffer = globals.cpu.readMemoryRegion(startAddress, words);
+        const nums = bufferToArray(buffer, globals.cpu.numType);
+        properties.machineCode = buffer;
+        properties.machineCodeInput.value = nums.map(n => globals.cpu.toHex(n)).join(' ');
+        popup.hide();
+      } catch (e) {
+        let p = document.createElement("p");
+        p.innerHTML = `Unable to read ${words} words from memory address 0x${startAddress.toString(16)}:<br>Error: <code>${e.message}</code>`;
+        new Popup("Error").setContent(p).show();
+      }
+    });
+    content.appendChild(button);
+
+    const popup = new Popup('Load from Memory').setContent(content);
+    popup.show();
+  });
+  title.appendChild(btnLoadFromMemory);
 
   const textarea = document.createElement('textarea');
   properties.machineCodeInput = textarea;
