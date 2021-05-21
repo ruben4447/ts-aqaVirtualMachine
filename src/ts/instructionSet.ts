@@ -22,35 +22,62 @@ export const instructionSet: IInstructionSet = {
     desc: "Load the value stored at [address] into register [register]",
     isAQA: true,
   },
-
+  LDR_PTR: {
+    mnemonic: 'LDR',
+    opcode: 0x11,
+    args: [AssemblerType.Register, AssemblerType.RegisterPtr],
+    desc: "Load the value stored at the address in register [registerPtr] into register [register]",
+    isAQA: false,
+  },
   STR: {
     mnemonic: "STR",
-    opcode: 0x11,
+    opcode: 0x12,
     args: [AssemblerType.Register, AssemblerType.Address],
-    desc: "Store the value that is in register[register] to address [address]",
+    desc: "Store the value that is in register [register] to address [address]",
     isAQA: true,
   },
+  STR_PTR: {
+    mnemonic: "STR",
+    opcode: 0x13,
+    args: [AssemblerType.Register, AssemblerType.RegisterPtr],
+    desc: "Store the value that is in register [register] to address in register [registerPtr]",
+    isAQA: false,
+  },
 
-  MOV_REG: {
+  MOV_REG_REG: {
     mnemonic: "MOV",
     opcode: 0x14,
     args: [AssemblerType.Register, AssemblerType.Register],
     desc: "Copy the value in [register2] to [register1]",
     isAQA: true,
   },
-  MOV_ADDR: {
+  MOV_ADDR_REG: {
     mnemonic: "MOV",
     opcode: 0x15,
     args: [AssemblerType.Register, AssemblerType.Address],
     desc: "Copy the value at address [address] to [register]",
     isAQA: true,
   },
-  MOV_CONST: {
+  MOV_CONST_REG: {
     mnemonic: "MOV",
     opcode: 0x16,
     args: [AssemblerType.Register, AssemblerType.Constant],
     desc: "Move value [constant] in to [register]",
     isAQA: true,
+  },
+  MOV_REGPTR_REG: {
+    mnemonic: "MOV",
+    opcode: 0x17,
+    args: [AssemblerType.RegisterPtr, AssemblerType.Register],
+    desc: "Move value stored in register [register] to the address stored in [registerPtr]",
+    isAQA: false,
+  },
+  MOV_REGPTR_REGPTR: {
+    mnemonic: "MOV",
+    opcode: 0x18,
+    args: [AssemblerType.RegisterPtr, AssemblerType.RegisterPtr],
+    desc: "Move value stored at address in register [registerPtr2] to the address stored in [registerPtr1]",
+    isAQA: false,
   },
   // #endregion
 

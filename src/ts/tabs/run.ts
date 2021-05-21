@@ -197,6 +197,7 @@ function displayExecInfo(info: IExecuteRecord) {
       let detail = '';
       if (commandInfo.args[i] == AssemblerType.Address) detail = "0x" + hex(info.args[i]); // Integer hexadecimal
       else if (commandInfo.args[i] == AssemblerType.Register) detail = globals.cpu.registerMap[info.args[i]]; // Register name
+      else if (commandInfo.args[i] == AssemblerType.RegisterPtr) detail = '*' + globals.cpu.registerMap[info.args[i]]; // Register name
       argDetails.push(detail);
     }
   } else {

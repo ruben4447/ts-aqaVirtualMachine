@@ -283,7 +283,27 @@ export class Assembler {
   private _parseArgument(argument: string): IAssemblerToken {
     const token: IAssemblerToken = { type: undefined, value: argument, num: undefined, };
 
-    if (argument.length > 1 && argument[0] == '#') {
+    // Pointer?
+    if (argument.length > 1 && argument[0] == '*') {
+      let argStr = argument.substr(1), token: IAssemblerToken;
+      if (argStr.length === 0) throw new AssemblerError(`Syntax Error: invalid syntax '${argument}'`, argument);
+      try {
+        token = this._parseArgument(argStr);
+      } catch (e) {
+        if (e instanceof AssemblerError) {
+          e.insertMessage(`Error whilst parsing pointer argument '${argument}':`);
+        }
+        throw e;
+      }
+
+      // Is this a valid pointer type?
+      if (token.type === AssemblerType.Register) {
+        token.type = AssemblerType.RegisterPtr;
+      } else {
+        throw new AssemblerError(`Syntax Error: invalid syntax '${argument}' : unknown pointer type '${AssemblerType[token.type]}'`, argument);
+      }
+      return token;
+    } else if (argument.length > 1 && argument[0] == '#') {
       // Constant value?
       token.type = AssemblerType.Constant;
       const base = getNumericBaseFromPrefix(argument[1]);
@@ -413,6 +433,10 @@ export class Assembler {
                     line.push(register);
                   } else if (info.args[j] === AssemblerType.Constant) {
                     line.push('#' + number);
+                  } else if (info.args[j] === AssemblerType.RegisterPtr) {
+                    let register = this._cpu.registerMap[number];
+                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
+                    line.push('*' + register);
                   } else {
                     line.push(number.toString());
                   }

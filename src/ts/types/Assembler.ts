@@ -12,6 +12,7 @@ export enum AssemblerType {
   Register,
   Constant,
   Label,
+  RegisterPtr,
 };
 
 /** Type of line in assembly AST */

@@ -35,7 +35,7 @@ function generateAssemblerInstructionSetHTML(): HTMLDivElement {
       }
       tr.insertAdjacentHTML('beforeend', `<td><span style='color:${info.isAQA ? 'green' : 'red'}'>${info.isAQA ? "Yes" : "No"}</span></td>`);
 
-      const args = info.args.length === 0 ? '' : '<code>' + info.args.map(a => `&lt;${AssemblerType[a].toLowerCase()}&gt;`).join(' ') + '</code>';
+      const args = info.args.length === 0 ? '' : '<code>' + info.args.map(a => `&lt;${AssemblerType[a]}&gt;`).join(' ') + '</code>';
       tr.insertAdjacentHTML('beforeend', `<td title='${info.args.length} arguments'>${args}</td>`);
       tr.insertAdjacentHTML('beforeend', `<td><small>${info.desc}</small></td>`);
       tbody.appendChild(tr);

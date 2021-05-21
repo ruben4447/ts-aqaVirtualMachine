@@ -205,9 +205,42 @@ export class CPU {
         const addressValue = this.readMemory(address);
         info.args = [register, address];
         if (this.executionConfig.commentary) {
-          info.text = `Load memory address 0x${this.toHex(address)} (0x${this.toHex(addressValue)}) to register ${this.registerMap[register]}`;
+          info.text = `Load value at address 0x${this.toHex(address)} (0x${this.toHex(addressValue)}) to register ${this.registerMap[register]}`;
         }
-        this.writeRegister(register, this.readMemory(address));
+        this.writeRegister(register, addressValue);
+        break;
+      }
+      case this.instructionSet.LDR_PTR: {
+        // LDR register registerPtr
+        const register = this.fetch(), registerPtr = this.fetch();
+        const address = this.readRegister(registerPtr), addressValue = this.readMemory(address);
+        info.args = [register, registerPtr];
+        if (this.executionConfig.commentary) {
+          info.text = `Load value at address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)} -> 0x${this.toHex(addressValue)}) into register ${this.registerMap[register]}`;
+        }
+        this.writeRegister(register, addressValue);
+        break;
+      }
+      case this.instructionSet.STR: {
+        // STR register address
+        const register = this.fetch(), address = this.fetch();
+        const registerValue = this.readRegister(register);
+        info.args = [register, address];
+        if (this.executionConfig.commentary) {
+          info.text = `Load value in register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to memory address 0x${address}`;
+        }
+        this.writeMemory(address, registerValue);
+        break;
+      }
+      case this.instructionSet.STR_PTR: {
+        // STR register registerPtr
+        const register = this.fetch(), registerPtr = this.fetch();
+        const registerValue = this.readRegister(register), address = this.readRegister(registerPtr);
+        info.args = [register, registerPtr];
+        if (this.executionConfig.commentary) {
+          info.text = `Load value in register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to memory address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)})`;
+        }
+        this.writeMemory(address, registerValue);
         break;
       }
       case this.instructionSet.ADD_REG: {
@@ -395,7 +428,7 @@ export class CPU {
         this.writeRegister(register1, result);
         break;
       }
-      case this.instructionSet.MOV_REG: {
+      case this.instructionSet.MOV_REG_REG: {
         // MOV register1 register2
         const register1 = this.fetch(), register2 = this.fetch();
         const register2val = this.readRegister(register2);
@@ -406,7 +439,7 @@ export class CPU {
         this.writeRegister(register1, register2val);
         break;
       }
-      case this.instructionSet.MOV_ADDR: {
+      case this.instructionSet.MOV_ADDR_REG: {
         // MOV register address
         const register = this.fetch(), address = this.fetch();
         const value = this.readMemory(address);
@@ -417,7 +450,7 @@ export class CPU {
         this.writeRegister(register, value);
         break;
       }
-      case this.instructionSet.MOV_CONST: {
+      case this.instructionSet.MOV_CONST_REG: {
         // MOV register constant
         const register = this.fetch(), constant = this.fetch();
         info.args = [register, constant];
@@ -425,6 +458,17 @@ export class CPU {
           info.text = `Move constant 0x${this.toHex(constant)} into register ${this.registerMap[register]}`;
         }
         this.writeRegister(register, constant);
+        break;
+      }
+      case this.instructionSet.MOV_REGPTR_REG: {
+        // MOV registerPtr register
+        const registerPtr = this.fetch(), register = this.fetch();
+        const address = this.readRegister(registerPtr), registerValue = this.readRegister(register);
+        info.args = [registerPtr, register];
+        if (this.executionConfig.commentary) {
+          info.text = `Copy value at register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)})`;
+        }
+        this.writeMemory(address, registerValue);
         break;
       }
       case this.instructionSet.CMP_REG: {

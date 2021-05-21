@@ -27,8 +27,19 @@ The registers depend in the Processor.
 ### Address
 Points to a location in memory.
 
+SYNTAX: `[base]<adderess>`.
+
 ### Label
-Must have been declared at any point in the program
+May be declared as a 'marker' in a program.
+
+May later be used by branch commands to move program flow to this label.
+
+### Pointer
+Prefixed by `*`.
+
+- Register Pointer `*r1` : points to contents of register r1
+  E.g. `MOV *r1, r2` copies the contents of r2 into the memory address stored in r1
+  E.g. `LDR r1, *r2` loads the value stored at address in r2 to r1
 
 ## Labels
 These are markers defined in a program and can be branched to to allow control flow

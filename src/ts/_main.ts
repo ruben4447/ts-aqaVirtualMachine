@@ -99,7 +99,7 @@ function __app_main_() {
   tabCode.properties.insertHalt = false;
   __app_init_({
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
-    numType: 'float32',
+    numType: 'int32',
   });
   console.clear();
   tabCode.properties.partailTranslationWrapper.style.display = "none";
@@ -108,7 +108,9 @@ function __app_main_() {
   
   globals.tabs._.open("code");
 
-  tabCode.properties.assemblyCodeInput.value = "MOV r1, #02\nEXP r1, r1, #05\nHALT";
+  const addr = 72;
+  globals.cpu.writeMemory(addr, 4447);
+  tabCode.properties.assemblyCodeInput.value = "MOV r1, #" + addr + "\nLDR r2, *r1\nHALT";
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
   globals.tabs._.open("run");
