@@ -127,7 +127,7 @@ export class Assembler {
     for (let i = 0; i < lines.length; i++) {
       try {
         let line = lines[i].trim();
-        line = line.replace(/'.*$/g, ''); // Remove comments
+        line = line.replace(/;.*$/g, ''); // Remove comments
         if (line.length === 0) continue;
         const parts = line.replace(/,/g, ' ').split(/\s+/g).filter(x => x.length > 0);
 
@@ -164,7 +164,7 @@ export class Assembler {
             throw error;
           }
         } else {
-          const error = new AssemblerError(`Syntax Error: expected <instruction> or <label>, got '${parts[0]}'`, parts[0]);
+          const error = new AssemblerError(`Syntax Error: invalid syntax`, parts[0]);
           error.setUnderlineString(line);
           throw error;
         }
@@ -313,6 +313,15 @@ export class Assembler {
         if (isNaN(base)) throw new AssemblerError(`Syntax Error: invalid numeric base flag '${argument[1]}'`, argument[1]); // Invalid base number
         token.num = base == undefined ? +argument.slice(1) : parseInt(argument.slice(2), base);
       }
+    } else if (argument[0] == '\'') {
+      if (argument[argument.length - 1] !== '\'') throw new AssemblerError(`Syntax Error: unclosed character literal`, argument);
+      let content = argument.substr(1, argument.length - 2);
+      if (content.length > 1) throw new AssemblerError(`Syntax Error: charcater literal too large`, content);
+      let num = argument[1].charCodeAt(0);
+      token.type = AssemblerType.Constant;
+      token.value = argument[1];
+      token.num = num;
+      return token;
     } else {
       const registerIndex = this._cpu.registerMap.indexOf(argument.toLowerCase());
       if (!isNaN(registerIndex) && registerIndex !== -1) {

@@ -108,12 +108,9 @@ function __app_main_() {
   
   globals.tabs._.open("code");
 
-  const addr = 72;
-  globals.cpu.writeMemory(addr, 4447);
-  tabCode.properties.assemblyCodeInput.value = "MOV r1, #" + addr + "\nLDR r2, *r1\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "MOV r1, #xd2\nINPSTR *r1\nOUTSTR *r1\nHALT";
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
-  globals.tabs._.open("run");
 }
 
 window.addEventListener('load', () => {

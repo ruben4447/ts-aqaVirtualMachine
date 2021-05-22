@@ -1,6 +1,6 @@
 import { createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../types/CPU";
 import { INumberType } from "../types/general";
-import { getNumTypeInfo, hex, numberToString, reverseKeyValues } from "../utils/general";
+import { arrayToBuffer, getNumTypeInfo, hex, numberToString, reverseKeyValues } from "../utils/general";
 import { CMP, compare } from '../utils/CPU';
 
 export class CPUError extends Error {
@@ -840,6 +840,95 @@ export class CPU {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'greater than' --> ${condition.toString().toUpperCase()}`;
         }
         if (condition) this.writeRegister(this._ip, registerVal);
+        break;
+      }
+      case this.instructionSet.INP: {
+        // INP registers
+        let register = this.fetch();
+        info.args = [register];
+        let userInput = +(globalThis.prompt(`STDIN: integer to register ${this.registerMap[register]}`, '0'));
+        if (this.executionConfig.commentary) {
+          info.text = `Load user input to register ${this.registerMap[register]} - STDIN recieved 0x${this.toHex(userInput)}`;
+        }
+        this.writeRegister(register, userInput);
+        break;
+      }
+      case this.instructionSet.INPSTR_ADDR: {
+        // INPSTR address
+        let address = this.fetch();
+        info.args = [address];
+        let string = globalThis.prompt(`STDIN: string to address 0x${this.toHex(address)}:`, '');
+        let nums = string.split('').map(x => x.charCodeAt(0));
+        nums.push(0);
+        if (this.executionConfig.commentary) {
+          info.text = `Load user input string to address 0x${this.toHex(address)}`;
+        }
+        this.loadMemoryBytes(address, arrayToBuffer(nums, this.numType));
+        break;
+      }
+      case this.instructionSet.INPSTR_PTR: {
+        // INPSTR registerPtr
+        const registerPtr = this.fetch(), address = this.readRegister(registerPtr);
+        info.args = [registerPtr];
+        let string = globalThis.prompt(`STDIN: string to address 0x${this.toHex(address)}:`, '');
+        let nums = string.split('').map(x => x.charCodeAt(0));
+        nums.push(0);
+        if (this.executionConfig.commentary) {
+          info.text = `Load user input string to address stored in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)})`;
+        }
+        this.loadMemoryBytes(address, arrayToBuffer(nums, this.numType));
+        break;
+      }
+      case this.instructionSet.OUT: {
+        // OUT registers
+        let register = this.fetch(), value = this.readRegister(register);
+        info.args = [register];
+        if (this.executionConfig.commentary) {
+          info.text = `Output register ${this.registerMap[register]}: 0x${this.toHex(value)}`;
+        }
+        globalThis.alert(`[STDOUT: register ${this.registerMap[register]}]\n>> ${value}`);
+        break;
+      }
+      case this.instructionSet.OUTSTR_REG: {
+        // OUTSTR register
+        let register = this.fetch(), value = this.readRegister(register), chr = String.fromCharCode(value);
+        info.args = [register];
+        if (this.executionConfig.commentary) {
+          info.text = `Output register ${this.registerMap[register]} as ASCII: ${chr} (0x${this.toHex(value)})`;
+        }
+        globalThis.alert(`[STDOUT: register ${this.registerMap[register]}]\n>> ${chr}`);
+        break;
+      }
+      case this.instructionSet.OUTSTR_ADDR: {
+        // OUTSTR address
+        let address = this.fetch();
+        info.args = [address];
+        let string = '';
+        for (let addr = address; ;addr++) {
+          let n = this.readMemory(addr);
+          if (n === 0) break;
+          string += String.fromCharCode(n);
+        }
+        if (this.executionConfig.commentary) {
+          info.text = `Output memory as null-terminated string from address 0x${this.toHex(address)} - string of length ${string.length}`;
+        }
+        globalThis.alert(`[STDOUT: address 0x${this.registerMap[address]}]\n>> ${string}`);
+        break;
+      }
+      case this.instructionSet.OUTSTR_PTR: {
+        // OUTSTR registerPtr
+        const registerPtr = this.fetch(), address = this.readRegister(registerPtr);
+        info.args = [registerPtr];
+        let string = '';
+        for (let addr = address; ;addr++) {
+          let n = this.readMemory(addr);
+          if (n === 0) break;
+          string += String.fromCharCode(n);
+        }
+        if (this.executionConfig.commentary) {
+          info.text = `Output memory as null-terminated string from address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)}) - string of length ${string.length}`;
+        }
+        globalThis.alert(`[STDOUT: address 0x${this.toHex(address)}]\n>> ${string}`);
         break;
       }
       default:

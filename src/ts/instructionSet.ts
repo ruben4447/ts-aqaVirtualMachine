@@ -8,9 +8,59 @@ import { AssemblerType, IInstructionSet } from "./types/Assembler";
 export const instructionSet: IInstructionSet = {
   NULL: {
     mnemonic: "NULL",
-    opcode: 0x0,
+    opcode: 0x00,
     args: [],
     desc: "Skips to next instruction (or acts as HALT is in safe mode)",
+    isAQA: false,
+  },
+
+  INP: {
+    mnemonic: "INP",
+    opcode: 0x01,
+    args: [AssemblerType.Register],
+    desc: "Prompt for input, and load into register [register]",
+    isAQA: false,
+  },
+  INPSTR_ADDR: {
+    mnemonic: "INPSTR",
+    opcode: 0x02,
+    args: [AssemblerType.Address],
+    desc: "Prompt for string input, and load into memory starting at address [address]",
+    isAQA: false,
+  },
+  INPSTR_PTR: {
+    mnemonic: "INPSTR",
+    opcode: 0x03,
+    args: [AssemblerType.RegisterPtr],
+    desc: "Prompt for string input, and load into memory starting at address stored in register [registerPtr]",
+    isAQA: false,
+  },
+  OUT: {
+    mnemonic: "OUT",
+    opcode: 0x05,
+    args: [AssemblerType.Register],
+    desc: "Output contents of register [register]",
+    isAQA: false,
+  },
+  OUTSTR_REG: {
+    mnemonic: "OUTSTR",
+    opcode: 0x06,
+    args: [AssemblerType.Register],
+    desc: "Output contents of register [register] as ASCII",
+    isAQA: false,
+  },
+  OUTSTR_ADDR: {
+    mnemonic: "OUTSTR",
+    opcode: 0x07,
+    args: [AssemblerType.Address],
+    desc: "Output memory from address [address] as a null-terminates string",
+    isAQA: false,
+  },
+  OUTSTR_PTR: {
+    mnemonic: "OUTSTR",
+    opcode: 0x08,
+    args: [AssemblerType.RegisterPtr],
+    desc: "Output memory from address in register [registerPtr] as a null-terminates string",
     isAQA: false,
   },
 
