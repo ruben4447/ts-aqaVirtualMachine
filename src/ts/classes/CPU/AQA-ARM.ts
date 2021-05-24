@@ -3,16 +3,17 @@ import { NumberType } from "../../types/general";
 import { arrayToBuffer, hex } from "../../utils/general";
 import { CMP, compare } from '../../utils/CPU';
 import CPU from "./CPU";
+import { instructionSet } from '../../instruction-set/aqa-arm';
 
 export class ARMProcessor extends CPU {
   public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"];
   public static readonly defaultNumType: NumberType = 'float32';
   public static readonly requiredRegisters: string[] = ["ip", "cmp"];
-  public readonly model: CPUModel = CPUModel.AQAARMProcessor;
+  public readonly model: CPUModel = CPUModel.AQAARM;
   
   constructor(config: ICPUConfiguration) {
     // Call super's constructor, but wih our defaults
-    super(config, ARMProcessor.defaultRegisters, ARMProcessor.defaultNumType, ARMProcessor.requiredRegisters);
+    super(instructionSet, config, ARMProcessor.defaultRegisters, ARMProcessor.defaultNumType, ARMProcessor.requiredRegisters);
   }
 
   /** @override */

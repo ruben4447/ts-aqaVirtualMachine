@@ -8,13 +8,17 @@ import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
 import * as tabCPU from "./tabs/cpu";
 import globals from "./globals";
-import instructionSet from "./instruction-set/aqa-arm";
 import { CPUModel, ICPUConfiguration } from "./types/CPU";
 import * as utils from './utils/general';
 import { loadCodeFont, withinState, writeInCentre, writeMultilineInCentre } from "./utils/Screen";
 
+import { instructionSet as aqaInstructionSet } from './instruction-set/aqa-arm';
+import { instructionSet as rsInstructionSet } from './instruction-set/rs';
+
 import ARMProcessor from "./classes/CPU/AQA-ARM";
 import type CPU from "./classes/CPU/CPU";
+import RSProcessor from "./classes/CPU/RS";
+import { IInstructionSet } from "./types/Assembler";
 globalThis.utils = utils;
 
 /**
@@ -22,6 +26,8 @@ globalThis.utils = utils;
  * Set content to globals.main as well as returning it.
  */
 export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration): HTMLDivElement {
+  const assemblyCode = tabCode.properties.assemblyCodeInput?.value || '';
+  const executionConfig = globals.cpu?.executionConfig;
   if (globals.main) globals.main.remove(); // destroy old application
 
   const main = document.createElement('div');
@@ -42,11 +48,22 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   outputWrapper.appendChild(btnClearScreen);
 
   // SET UP CPU AND ASSEMBLER
-  let cpu: CPU;
-  if (model == CPUModel.AQAARMProcessor) cpu = new ARMProcessor(cpuConfiguration);
-  else throw new Error(`Unknown CPU model '${model}'`);
+  let cpu: CPU, instructionSet: IInstructionSet;
+  switch (model) {
+    case CPUModel.AQAARM:
+      cpu = new ARMProcessor(cpuConfiguration);
+      instructionSet = aqaInstructionSet;
+      break;
+    case CPUModel.RS:
+      cpu = new RSProcessor(cpuConfiguration);
+      instructionSet = rsInstructionSet;
+      break;
+    default:
+      throw new Error(`Unknown CPU model '${model}'`);
+  }
+  if (executionConfig) cpu.executionConfig = executionConfig;
   globals.cpu = cpu;
-
+  globals.instructionSet = instructionSet;
   const assembler = new Assembler(cpu, instructionSet);
   globals.assembler = assembler;
 
@@ -57,6 +74,7 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   globals.registerView = tabMemory.properties.registerView;
 
   tabCode.init();
+  tabCode.properties.assemblyCodeInput.value = assemblyCode;
   globals.tabs.code = tabCode.properties;
 
   tabRun.init();
@@ -103,17 +121,16 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
 function __app_main_() {
   console.clear();
   tabCode.properties.insertHalt = false;
-  __app_init_(CPUModel.AQAARMProcessor, {
-    instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
+  __app_init_(CPUModel.RS, {
     numType: 'int32',
   });
   tabCode.properties.partailTranslationWrapper.style.display = "none";
 
-  tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
   
   globals.tabs._.open("code");
 
-  tabCode.properties.assemblyCodeInput.value = "MOV r1, #xd2\nINPSTR *r1\nOUTSTR *r1\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "HALT";
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }

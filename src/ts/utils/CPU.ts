@@ -1,3 +1,7 @@
+import { IInstructionSet } from "../types/Assembler";
+import { ICPUInstructionSet } from "../types/CPU";
+import { hex } from "./general";
+
 /** Comparison results. Note, no negative numbers to support unsigned data types. */
 export enum CMP {
   EQUAL_TO = 0x0,
@@ -10,4 +14,22 @@ export function compare(a: number, b: number): CMP {
   else if (a < b) return CMP.LESS_THAN;
   else if (a > b) return CMP.GREATER_THAN;
   else throw new Error(`Compare: How the fuck did we get here? We somehow denied all logic...`);
+}
+
+/** Generate CPUInstructionSet from InstructionSet */
+export function generateCPUInstructionSet(instructionSet: IInstructionSet): ICPUInstructionSet {
+  const data = {};
+  const usedOpcodes: number[] = [];
+  for (const instruction in instructionSet) {
+    if (instructionSet.hasOwnProperty(instruction)) {
+      const opcode = instructionSet[instruction].opcode;
+      if (usedOpcodes.indexOf(opcode) === -1) {
+        data[instruction] = opcode;
+        usedOpcodes.push(opcode);
+      } else {
+        throw new Error(`Invalid instruction set: duplicate opcode present: 0x${hex(opcode)} (${instruction})`);
+      }
+    }
+  }
+  return data;
 }

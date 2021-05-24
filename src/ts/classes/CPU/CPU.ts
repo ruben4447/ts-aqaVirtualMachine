@@ -1,5 +1,7 @@
+import { IInstructionSet } from "../../types/Assembler";
 import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../../types/CPU";
 import { INumberType, NumberType } from "../../types/general";
+import { generateCPUInstructionSet } from "../../utils/CPU";
 import { getNumTypeInfo, numberToString, reverseKeyValues } from "../../utils/general";
 
 export class CPUError extends Error {
@@ -29,8 +31,8 @@ export class CPU {
   public executionConfig: ICPUExecutionConfig;
 
 
-  constructor(config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = CPU.requiredRegisters) {
-    this.instructionSet = config.instructionSet;
+  constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = CPU.requiredRegisters) {
+    this.instructionSet = generateCPUInstructionSet(instructionSet);
     this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
     const numType = config.numType || defaultNumType;

@@ -3,6 +3,9 @@ This tells the control unit to do something.
 
 All the CPUs instruction can be seen in the instruction set.
 
+## Comments
+Anything after `;` will be removed as a comment.
+
 ## Operands
 These follow an instruction and are seperated by whitespace (a comma is optional)
 *e.g. MOV r8, #5*
@@ -40,6 +43,11 @@ Prefixed by `*`.
 - Register Pointer `*r1` : points to contents of register r1
   E.g. `MOV *r1, r2` copies the contents of r2 into the memory address stored in r1
   E.g. `LDR r1, *r2` loads the value stored at address in r2 to r1
+
+### Character Literals
+These may be used in place of constant value
+
+SYNTAX: `'<character>'`, where `<character>` is any ascii characters. THe program will convert this to its ASCII code and substitute this as the constant value e.g, `MOV r1, 'A'` == `MOV r1, #65`
 
 ## Labels
 These are markers defined in a program and can be branched to to allow control flow

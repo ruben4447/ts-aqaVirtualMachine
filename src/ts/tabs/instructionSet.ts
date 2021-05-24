@@ -14,10 +14,11 @@ export const properties: IInstructionSetTabProperties = {};
 
 function generateAssemblerInstructionSetHTML(): HTMLDivElement {
   const wrapper = document.createElement('div');
+  const isAQAProcessor = globals.cpu.model === CPUModel.AQAARM;
 
   const table = document.createElement('table');
   wrapper.appendChild(table);
-  table.insertAdjacentHTML('beforeend', `<thead><tr><th>Parent Mnemonic</th><th>Mnemonic</th><th>Opcode</th><th title='Is instruction present in the A-level AQA assembly language spec?'>AQA?</th><th>Arguments</th><th>Description</th></tr></thead>`);
+  table.insertAdjacentHTML('beforeend', `<thead><tr><th>Parent Mnemonic</th><th>Mnemonic</th><th>Opcode</th>${isAQAProcessor ? `<th title='Is instruction present in the A-level AQA assembly language spec?'>AQA?</th>` : ``}<th>Arguments</th><th>Description</th></tr></thead>`);
   const tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
@@ -34,7 +35,7 @@ function generateAssemblerInstructionSetHTML(): HTMLDivElement {
         const word = globals.cpu.toHex(info.opcode);
         tr.insertAdjacentHTML('beforeend', `<td><code title='CPU word: 0x${word}'>0x${hex(info.opcode)}</code></td>`);
       }
-      tr.insertAdjacentHTML('beforeend', `<td><span style='color:${info.isAQA ? 'green' : 'red'}'>${info.isAQA ? "Yes" : "No"}</span></td>`);
+      if (isAQAProcessor) tr.insertAdjacentHTML('beforeend', `<td><span style='color:${info.isAQA ? 'green' : 'red'}'>${info.isAQA ? "Yes" : "No"}</span></td>`);
 
       const args = info.args.length === 0 ? '' : '<code>' + info.args.map(a => `&lt;${AssemblerType[a]}&gt;`).join(' ') + '</code>';
       tr.insertAdjacentHTML('beforeend', `<td title='${info.args.length} arguments'>${args}</td>`);
@@ -52,11 +53,10 @@ export function init() {
   const content = document.createElement("div");
   info.content = content;
 
-  const title = document.createElement("h2");
-  content.appendChild(title);
-  title.innerText = "Processor Instruction Set";
+  content.insertAdjacentHTML('beforeend', `<h2>Processor Instruction Set</h2>`);
+  content.insertAdjacentHTML('beforeend', `<span><em>Processor: <code>${globals.cpu.model}</code></em></span>`);
 
-  if (globals.cpu.model === CPUModel.AQAARMProcessor) content.insertAdjacentHTML('beforeend', '<p>Link: <a target="_blank" href="https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF">Official AQA A-level assembly language specification</a></p>');
+  if (globals.cpu.model === CPUModel.AQAARM) content.insertAdjacentHTML('beforeend', '<p>Link: <a target="_blank" href="https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF">Official AQA A-level assembly language specification</a></p>');
 
   content.appendChild(generateAssemblerInstructionSetHTML());
 }

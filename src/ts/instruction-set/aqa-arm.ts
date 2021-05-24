@@ -512,5 +512,3 @@ export const instructionSet: IInstructionSet = {
 };
 
 export default instructionSet;
-
-globals.instructionSet = Object.freeze(instructionSet);

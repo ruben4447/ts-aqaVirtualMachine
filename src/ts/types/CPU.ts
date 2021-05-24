@@ -6,7 +6,8 @@ export interface ICPUInstructionSet {
 }
 
 export enum CPUModel {
-  AQAARMProcessor = 'AQA ARM',
+  AQAARM = 'AQA ARM',
+  RS = 'RS',
 }
 
 export interface IReversedCPUInstructionSet {
@@ -15,7 +16,6 @@ export interface IReversedCPUInstructionSet {
 
 /** Configuration for a CPU */
 export interface ICPUConfiguration {
-  instructionSet: ICPUInstructionSet;
   numType?: NumberType; // What numerical type memory operates in
   memory?: number; // Memory size
   registerMap?: string[]; // Register map. The CPU will as the required registers if they aren't present

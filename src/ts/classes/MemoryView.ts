@@ -1,9 +1,9 @@
 import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
-import { hex, numberToString } from "../utils/general";
+import { numberToString } from "../utils/general";
 import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
-import instructionSet from "../instruction-set/aqa-arm";
+import globals from "../globals";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 
@@ -116,7 +116,7 @@ export class MemoryView {
             S.setForeground(pointedAtByIPFG);
             S.writeString(text, false);
           });
-        } else if (value == instructionSet.HALT.opcode) {
+        } else if (value == globals.instructionSet.HALT.opcode) {
           withinState(this.screen, S => {
             S.setForeground('tomato');
             S.writeString(text, false);

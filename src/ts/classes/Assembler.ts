@@ -493,24 +493,6 @@ export class Assembler {
 
     this._assembly = lines.map(arr => arr.join(' ')).join('\n');
   }
-
-  /** From instruction set, generate instruction SET for the CPU */
-  public static generateCPUInstructionSet(instructionSet: IInstructionSet): ICPUInstructionSet {
-    const data = {};
-    const usedOpcodes: number[] = [];
-    for (const instruction in instructionSet) {
-      if (instructionSet.hasOwnProperty(instruction)) {
-        const opcode = instructionSet[instruction].opcode;
-        if (usedOpcodes.indexOf(opcode) === -1) {
-          data[instruction] = opcode;
-          usedOpcodes.push(opcode);
-        } else {
-          throw new Error(`Invalid instruction set: duplicate opcode present: 0x${hex(opcode)} (${instruction})`);
-        }
-      }
-    }
-    return data;
-  }
 }
 
 export default Assembler;

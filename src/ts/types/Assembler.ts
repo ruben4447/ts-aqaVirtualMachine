@@ -32,7 +32,7 @@ export interface IInstructionInfo {
   opcode: number,
   args: Array<AssemblerType>; // Argument types
   desc: string; // Description
-  isAQA: boolean; // Is in the AQA instruction set?
+  isAQA?: boolean; // Is in the AQA instruction set? (for AQA-Arm)
 };
 
 /** Describes a line of tokens in assembly */
