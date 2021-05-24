@@ -1,6 +1,6 @@
 import globals from "../globals";
-import instructionSet from "../instructionSet";
 import { AssemblerType } from "../types/Assembler";
+import { CPUModel } from "../types/CPU";
 import { IInstructionSetTabProperties, ITabInfo } from "../types/Tabs";
 import { hex } from "../utils/general";
 
@@ -21,6 +21,7 @@ function generateAssemblerInstructionSetHTML(): HTMLDivElement {
   const tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
+  const instructionSet = globals.instructionSet;
   let lastMnemonic: string; // Last mnemonic that was come accross
   for (const instruction in instructionSet) {
     if (instructionSet.hasOwnProperty(instruction)) {
@@ -53,9 +54,9 @@ export function init() {
 
   const title = document.createElement("h2");
   content.appendChild(title);
-  title.innerText = "AQA Processor Instruction Set";
+  title.innerText = "Processor Instruction Set";
 
-  content.insertAdjacentHTML('beforeend', '<p>Link: <a target="_blank" href="https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF">Official AQA A-level assembly language specification</a></p>');
+  if (globals.cpu.model === CPUModel.AQAARMProcessor) content.insertAdjacentHTML('beforeend', '<p>Link: <a target="_blank" href="https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF">Official AQA A-level assembly language specification</a></p>');
 
   content.appendChild(generateAssemblerInstructionSetHTML());
 }

@@ -1,8 +1,12 @@
-import type CPU from "../classes/CPU";
+import type CPU from "../classes/CPU/CPU";
 import { NumberType } from "./general";
 
 export interface ICPUInstructionSet {
   [instruction: string]: number; // Map instruction to opcode
+}
+
+export enum CPUModel {
+  AQAARMProcessor = 'AQA ARM',
 }
 
 export interface IReversedCPUInstructionSet {

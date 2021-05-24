@@ -1,4 +1,4 @@
-import { DataviewGetMethod, DataviewSetMethod, INumberType, ITextMeasurements, NumberType, TypedArray } from "../types/general";
+import { DataviewGetMethod, DataviewSetMethod, INumberType, ITextMeasurements, NumberType } from "../types/general";
 
 /** Get numeric base from prefix. No prefix: undefined. Unknown prefix: NaN */
 export function getNumericBaseFromPrefix(prefix: string): number | undefined {

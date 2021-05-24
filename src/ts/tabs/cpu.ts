@@ -1,5 +1,6 @@
 import Popup from "../classes/Popup";
 import globals from "../globals";
+import { CPUModel } from "../types/CPU";
 import { NumberType } from "../types/general";
 import { ICPUTabProperties, ITabInfo } from "../types/Tabs";
 import { getMinMaxValues, numberToString, numericTypes, seperateNumber } from "../utils/general";
@@ -28,6 +29,24 @@ function generateHTML(): HTMLDivElement {
   // let link = createLink('View instruction set here');
   // link.addEventListener('click', () => globals.tabs._.open('instructionSet'));
   // p.appendChild(link);
+
+  // CPU Model
+  div = document.createElement("div");
+  wrapper.appendChild(div);
+  div.insertAdjacentHTML('beforeend', '<h3>CPU Model</h3>');
+  p = document.createElement("p");
+  div.appendChild(p);
+  const selectCPUModel = document.createElement("select");
+  for (const model in CPUModel) {
+    if (CPUModel.hasOwnProperty(model)) {
+      const value = CPUModel[model];
+      selectCPUModel.insertAdjacentHTML('beforeend', `<option value='${model}'${value === globals.cpu.model ? ` selected='selected'` : ``}>${value}</option>`);
+    }
+  }
+  selectCPUModel.addEventListener('change', () => {
+    updateCPU(CPUModel[selectCPUModel.value]);
+  });
+  p.appendChild(selectCPUModel);
 
   // Numeric Representation
   div = document.createElement("div");
@@ -68,7 +87,7 @@ function generateHTML(): HTMLDivElement {
     }
   }
   selectDataType.addEventListener('change', () => {
-    updateCPU(selectDataType.value as NumberType, undefined);
+    updateCPU(undefined, selectDataType.value as NumberType, undefined);
   });
 
   tbody.insertAdjacentHTML('beforeend', `<tr><th>Bytes per <a target="_blank" href="https://en.wikipedia.org/wiki/Word_(computer_architecture)">Word</a></th><td><code>${globals.cpu.numType.bytes}</code></td></tr>`);
@@ -100,7 +119,7 @@ function generateHTML(): HTMLDivElement {
   inputMemorySize.addEventListener('change', () => {
     let size = parseInt(inputMemorySize.value);
     if (!isNaN(size) || !isFinite(size) && size > parseInt(inputMemorySize.min)) {
-      updateCPU(undefined, size);
+      updateCPU(undefined, undefined, size);
     } else {
       inputMemorySize.value = size.toString();
     }
@@ -145,7 +164,7 @@ function generateHTML(): HTMLDivElement {
       new Popup('Invalid Register Name').insertAdjacentText('beforeend', `The inputted register name is invalid. Check: is it too long/short, or does it already exist?`).show();
       inputNewRegister.value = '';
     } else {
-      updateCPU(undefined, undefined, [...globals.cpu.registerMap, name]);
+      updateCPU(undefined, undefined, undefined, [...globals.cpu.registerMap, name]);
     }
   });
 
@@ -248,11 +267,12 @@ export function updateBase(base: number) {
   updateGUI();
 }
 
-function updateCPU(numType?: NumberType, memorySize?: number, registerMap?: string[]) {
+function updateCPU(model?: CPUModel, numType?: NumberType, memorySize?: number, registerMap?: string[]) {
+  if (model === undefined) model = globals.cpu.model;
   if (numType === undefined) numType = globals.cpu.numType.type;
   if (memorySize === undefined) memorySize = globals.cpu.memorySize;
   if (registerMap === undefined) registerMap = globals.cpu.registerMap;
-  __app_init_({
+  __app_init_(model, {
     instructionSet: globals.cpu.instructionSet,
     numType: numType,
     memory: memorySize,

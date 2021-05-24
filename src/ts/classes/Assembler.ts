@@ -1,4 +1,4 @@
-import CPU from "./CPU";
+import CPU from "./CPU/CPU";
 import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine } from "../types/Assembler";
 import { isValidLabel, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";

@@ -1,5 +1,5 @@
 import type Assembler from "./classes/Assembler";
-import type CPU from "./classes/CPU";
+import type CPU from "./classes/CPU/CPU";
 import type MemoryView from "./classes/MemoryView";
 import type RegisterView from "./classes/RegisterView";
 import type CustomScreen from "./classes/Screen";

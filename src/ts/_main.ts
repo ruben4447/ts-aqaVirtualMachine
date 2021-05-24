@@ -1,5 +1,4 @@
 import { Assembler } from "./classes/Assembler";
-import CPU from "./classes/CPU";
 import CustomScreen from "./classes/Screen";
 
 import Tabs from "./classes/Tabs";
@@ -9,17 +8,20 @@ import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
 import * as tabCPU from "./tabs/cpu";
 import globals from "./globals";
-import instructionSet from "./instructionSet";
-import { ICPUConfiguration } from "./types/CPU";
+import instructionSet from "./instruction-set/aqa-arm";
+import { CPUModel, ICPUConfiguration } from "./types/CPU";
 import * as utils from './utils/general';
 import { loadCodeFont, withinState, writeInCentre, writeMultilineInCentre } from "./utils/Screen";
+
+import ARMProcessor from "./classes/CPU/AQA-ARM";
+import type CPU from "./classes/CPU/CPU";
 globalThis.utils = utils;
 
 /**
  * Initialise web application
  * Set content to globals.main as well as returning it.
  */
-export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement {
+export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration): HTMLDivElement {
   if (globals.main) globals.main.remove(); // destroy old application
 
   const main = document.createElement('div');
@@ -40,7 +42,9 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
   outputWrapper.appendChild(btnClearScreen);
 
   // SET UP CPU AND ASSEMBLER
-  const cpu = new CPU(cpuConfiguration);
+  let cpu: CPU;
+  if (model == CPUModel.AQAARMProcessor) cpu = new ARMProcessor(cpuConfiguration);
+  else throw new Error(`Unknown CPU model '${model}'`);
   globals.cpu = cpu;
 
   const assembler = new Assembler(cpu, instructionSet);
@@ -81,6 +85,7 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
   const logPad = '-'.repeat(20);
   console.log(logPad);
   console.log(`%cInitiating Application...`, 'color:lime;background:black;');
+  console.log(`%cCPU Model%c = %c${cpu.model}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(`%cCPU Data Type%c = %c${cpuConfiguration.numType}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(`%cCPU Memory Size%c = %c${cpuConfiguration.memory}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(`%cCPU Registers%c = %c${cpuConfiguration.registerMap}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
@@ -89,19 +94,19 @@ export function __app_init_(cpuConfiguration: ICPUConfiguration): HTMLDivElement
     S.reset();
     loadCodeFont(S);
     S.setForeground('lime');
-    writeMultilineInCentre(S, `-- Virtual Processor created --\nType ${cpu.numType.type}; memory capacity 0x${cpu.memorySize.toString(16)}\nSee \'CPU\' tab for more`.toUpperCase());
+    writeMultilineInCentre(S, `-- Virtual Processor created --\nModel: '${cpu.model}'\nNum Type ${cpu.numType.type}; memory capacity 0x${cpu.memorySize.toString(16)}\nSee \'CPU\' tab for more`.toUpperCase());
   });
 
   return main;
 }
 
 function __app_main_() {
+  console.clear();
   tabCode.properties.insertHalt = false;
-  __app_init_({
+  __app_init_(CPUModel.AQAARMProcessor, {
     instructionSet: Assembler.generateCPUInstructionSet(instructionSet),
     numType: 'int32',
   });
-  console.clear();
   tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   tabCode.properties.assemblyCodeInput.value = "' Start typing AQA Assembly code here!\nHALT";

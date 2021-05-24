@@ -1,7 +1,6 @@
-import Popup from "../classes/Popup";
 import CustomScreen from "../classes/Screen";
 import globals from "../globals";
-import instructionSet from "../instructionSet";
+import instructionSet from "../instruction-set/aqa-arm";
 import { AssemblerType } from "../types/Assembler";
 import { createExecuteRecordObject, IExecuteRecord } from "../types/CPU";
 import { ITextMeasurements } from "../types/general";

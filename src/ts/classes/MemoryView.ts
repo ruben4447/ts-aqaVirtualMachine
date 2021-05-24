@@ -1,9 +1,9 @@
-import CPU from "./CPU";
+import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
 import { hex, numberToString } from "../utils/general";
 import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
-import instructionSet from "../instructionSet";
+import instructionSet from "../instruction-set/aqa-arm";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 

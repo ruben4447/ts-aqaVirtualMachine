@@ -1,5 +1,5 @@
-import globals from "./globals";
-import { AssemblerType, IInstructionSet } from "./types/Assembler";
+import globals from "../globals";
+import { AssemblerType, IInstructionSet } from "../types/Assembler";
 
 // TODO: add "subset" regions, mapping address ranges to common meaning e.g. 0x1- to "memory managment"
 //       make visible in instructionSet tab above the command table, and insert as new column for each command

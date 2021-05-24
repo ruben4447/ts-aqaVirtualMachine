@@ -1,5 +1,5 @@
 import { numberToString } from "../utils/general";
-import CPU from "./CPU";
+import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
 
 export class RegisterView {
