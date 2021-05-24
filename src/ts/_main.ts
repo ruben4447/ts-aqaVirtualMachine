@@ -130,7 +130,10 @@ function __app_main_() {
   
   globals.tabs._.open("code");
 
-  tabCode.properties.assemblyCodeInput.value = "HALT";
+  let srcAddr = 0x2a, dstAddr = 0x31;
+  globals.cpu.writeMemory(srcAddr, 4447);
+  tabCode.properties.assemblyCodeInput.value = `MOV r1, #${srcAddr}\nMOV r2, #${dstAddr}\nMOV *r2, *r1`;
+  tabCode.properties.assemblyCodeInput.value += "\nHALT";
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }

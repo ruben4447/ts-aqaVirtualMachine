@@ -1,5 +1,7 @@
 # ts-aqaVirtualMachine
-Virtual machine based on the AQA instruction set and assembly language
+Virtual machine based on the AQA instruction set and assembly language (model: `AQA ARM`).
+
+There is also support for additional processor types.
 
 ## Main Features
 - **AQA Assembly code compiler** - able to write AQA assembly code and compile this into machine code
@@ -12,7 +14,7 @@ Instruction sets list what commands may be used and map it to an opcode that the
 
 The official A-Level AQA Assembly Language specification: [https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF](https://filestore.aqa.org.uk/resources/computing/AQA-75162-75172-ALI.PDF)
 
-The instruction set is at `src/ts/instructionSet.ts`. It contains each sub-instruction; the property `.mnemonic` is what one would type in the assembly code input. This "parent" mnemonic is mapped to this specific mnemonic via the argument signature (the `.args` property).
+The instruction sets are stored in `src/ts/instruction-set/`. Each one contains a sub-instruction; the property `.mnemonic` is what one would type in the assembly code input. This "parent" mnemonic is mapped to this specific mnemonic via the argument signature (the `.args` property).
 
 The `Instruction Set` Tab shows this.
 

@@ -1,4 +1,3 @@
-import globals from "../globals";
 import { AssemblerType, IInstructionSet } from "../types/Assembler";
 
 // TODO: add "subset" regions, mapping address ranges to common meaning e.g. 0x1- to "memory managment"
