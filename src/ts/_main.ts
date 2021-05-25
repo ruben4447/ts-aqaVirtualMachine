@@ -122,7 +122,7 @@ function __app_main_() {
   console.clear();
   tabCode.properties.insertHalt = false;
   __app_init_(CPUModel.RS, {
-    numType: 'int32',
+    numType: 'float32',
   });
   tabCode.properties.partailTranslationWrapper.style.display = "none";
 
@@ -130,10 +130,8 @@ function __app_main_() {
   
   globals.tabs._.open("code");
 
-  let srcAddr = 0x2a, dstAddr = 0x31;
-  globals.cpu.writeMemory(srcAddr, 4447);
-  tabCode.properties.assemblyCodeInput.value = `MOV r1, #${srcAddr}\nMOV r2, #${dstAddr}\nMOV *r2, *r1`;
-  tabCode.properties.assemblyCodeInput.value += "\nHALT";
+  const lines = [`MOV r2, #2`, `INC r2`, `HALT`];
+  tabCode.properties.assemblyCodeInput.value = lines.join('\n');
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }

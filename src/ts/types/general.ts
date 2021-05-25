@@ -14,3 +14,5 @@ export interface INumberType {
   setMethod: DataviewSetMethod;
   isInt: boolean;
 };
+
+export type Bit = 0 | 1;

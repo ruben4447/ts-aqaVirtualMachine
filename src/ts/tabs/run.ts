@@ -1,6 +1,5 @@
 import CustomScreen from "../classes/Screen";
 import globals from "../globals";
-import instructionSet from "../instruction-set/aqa-arm";
 import { AssemblerType } from "../types/Assembler";
 import { createExecuteRecordObject, IExecuteRecord } from "../types/CPU";
 import { ITextMeasurements } from "../types/general";
@@ -190,7 +189,7 @@ function displayExecInfo(info: IExecuteRecord) {
   S.clear();
   loadCodeFont(S);
 
-  const mnemonic = globals.cpu.getMnemonic(info.opcode), commandInfo = instructionSet[mnemonic], argDetails: string[] = [];
+  const mnemonic = globals.cpu.getMnemonic(info.opcode), commandInfo = globals.instructionSet[mnemonic], argDetails: string[] = [];
   if (commandInfo) {
     for (let i = 0; i < commandInfo.args.length; i++) {
       let detail = '';

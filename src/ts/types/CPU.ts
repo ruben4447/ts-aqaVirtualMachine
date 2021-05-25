@@ -56,3 +56,12 @@ export function createCPUExecutionConfigObject(): ICPUExecutionConfig {
     commentary: true,
   };
 }
+
+// export interface IFlagMasks {
+//   CF: 0x0001,
+//   PF: 0x0002,
+//   AF: 0x0004,
+//   ZF: 0x0008,
+//   SF: 0x0010,
+//   OF: 0x0020,
+// }
