@@ -48,7 +48,10 @@ export interface IRunTabProperties {
 }
 
 /** Properties for tab:"instruction set" */
-export interface IInstructionSetTabProperties { }
+export interface IInstructionSetTabProperties {
+  instructionSetDivWrapper: HTMLDivElement
+  orderBy: string; // For more information, see generateAssemblerInstructionSetHTML method to see what options are used
+}
 
 /** Properties for tab:"cpu" */
 export interface ICPUTabProperties {

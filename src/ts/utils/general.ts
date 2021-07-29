@@ -1,5 +1,7 @@
 import { DataviewGetMethod, DataviewSetMethod, INumberType, ITextMeasurements, NumberType } from "../types/general";
 
+export const capitalise = str => str.split(' ').map(s => s[0].toUpperCase() + s.substr(1).toLowerCase()).join(' ');
+
 /** Get numeric base from prefix. No prefix: undefined. Unknown prefix: NaN */
 export function getNumericBaseFromPrefix(prefix: string): number | undefined {
   // If numeric, then there is none
@@ -272,7 +274,27 @@ export function insertNumericalBaseInput(parent: HTMLElement, callback: (n: numb
   return input;
 }
 
+/** Sort object by alphabetical keys */
+export function sortObjectKeysAlphabetical<T>(o: T): T {
+  return Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b))) as T;
+}
+
+/** Sort object by alphabetiocal key value */
+export function sortObjectByKeyAlphabetical<T>(o: T, key: string): T {
+  return Object.fromEntries(Object.entries(o).sort(([_a, a], [_b, b]) => a[key].localeCompare(b[key]))) as T;
+}
+
 /** Sort object by numeric key value */
 export function sortObjectByKey<T>(o: T, key: string): T {
   return Object.fromEntries(Object.entries(o).sort(([_a, a], [_b, b]) => a[key] - b[key])) as T;
+}
+
+/** Group values in an object by a key */
+export function objectGroupBy<T>(o: T, groupByKey: string): { [group: string]: T } {
+  const grouped = {};
+  for (let key in o) {
+    if (!(o[key][groupByKey] in grouped)) grouped[o[key][groupByKey]] = {};
+    grouped[o[key][groupByKey]][key] = o[key];
+  }
+  return grouped;
 }
