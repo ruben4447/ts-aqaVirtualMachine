@@ -21,6 +21,7 @@ export const properties: ICodeTabProperties = {
   machineCode: undefined,
   insertHalt: true,
   deassembleUseLabels: true,
+  removeNOPs: false,
 };
 
 function generateAssemblyHTML(): HTMLDivElement {
@@ -76,6 +77,13 @@ function generateAssemblyHTML(): HTMLDivElement {
   inputInsertHalt.checked = properties.insertHalt;
   inputInsertHalt.addEventListener('change', () => properties.insertHalt = inputInsertHalt.checked);
   p.appendChild(inputInsertHalt);
+  p.insertAdjacentHTML('beforeend', `&nbsp; &nbsp; Remove NOPs `);
+  const checkBoxRemoveNOP = document.createElement("input");
+  checkBoxRemoveNOP.type = "checkbox";
+  checkBoxRemoveNOP.title = `Remove NOP operations during assembling. NOTE this will not adjust any Branch command addresses`;
+  checkBoxRemoveNOP.checked = properties.removeNOPs;
+  checkBoxRemoveNOP.addEventListener('change', () => properties.removeNOPs = checkBoxRemoveNOP.checked);
+  p.appendChild(checkBoxRemoveNOP);
 
   const textarea = document.createElement('textarea');
   properties.assemblyCodeInput = textarea;
@@ -223,6 +231,7 @@ export function compileAssembly() {
 
   let buffer: ArrayBuffer, error: Error;
   globals.output.reset();
+  globals.assembler.removeNOPs = properties.removeNOPs;
   try {
     globals.assembler.parse(code);
   } catch (e) {
@@ -285,7 +294,7 @@ export function decompileMachineCode() {
     });
   } else {
     let assembly = globals.assembler.getAssemblyCode();
-    properties.assemblyCodeInput.value = `' Decompiled from machine code\n` + assembly;
+    properties.assemblyCodeInput.value = `; Decompiled from machine code\n` + assembly;
 
     globals.output.reset();
     withinState(globals.output, S => {

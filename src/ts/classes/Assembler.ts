@@ -66,6 +66,7 @@ export class Assembler {
   private _bytes: ArrayBuffer;
   private _labels: ILabelMap = {};
   public startAddress = 0;
+  public removeNOPs: boolean = false;
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
@@ -146,7 +147,11 @@ export class Assembler {
             }
             throw e;
           }
-          ast.push(instructionLine);
+          if (this.removeNOPs && instructionLine.instruction === 'NOP'){
+            // Do not add NOP instruction
+          } else {
+            ast.push(instructionLine);
+          }
         } else if (parts[0][parts[0].length - 1] === ':') {
           const label = parts[0].substr(0, parts[0].length - 1);
           if (parts.length === 1) {
