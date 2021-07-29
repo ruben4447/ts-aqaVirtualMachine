@@ -140,7 +140,7 @@ function __app_main_() {
 
   // Initiate application
   __app_init_(CPUModel.AQAARMExt, {
-    numType: 'int32',
+    numType: 'float32',
   });
 
   // Prompt user
@@ -148,7 +148,7 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-  const lines = [`loop:`, `B loop`, `HALT`];
+  const lines = [`#define var "Hello, World"`, `MOV r1, var`, `HALT`];
   tabCode.properties.assemblyCodeInput.value = lines.join('\n');
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

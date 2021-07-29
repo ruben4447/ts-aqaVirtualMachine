@@ -11,7 +11,7 @@ export enum AssemblerType {
   Address,
   Register,
   Constant,
-  Label,
+  Symbol, // Like a variable or label
   RegisterPtr,
 };
 
@@ -50,10 +50,6 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
 /** Represent an assembly label declaration line */
 export interface IAssemblyLabelDeclarationLine extends IAssemblyLine {
   label: string;
-}
-
-export interface ILabelMap {
-  [label: string]: number;
 }
 
 export interface IReplaceCommandMap {

@@ -1,6 +1,6 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
-import { isValidLabel, label_regex, matchesTypeSignature } from "../utils/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
+import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
 
@@ -64,7 +64,8 @@ export class Assembler {
   private _assembly: string;
   private _ast: IAssemblyLine[];
   private _bytes: ArrayBuffer;
-  private _labels: ILabelMap = {};
+  private _labels: Map<string, number> = new Map();
+  private _symbols: Map<string, string> = new Map();
   public startAddress = 0;
   public removeNOPs: boolean = false;
   public replaceCommandMap: IReplaceCommandMap = {};
@@ -78,14 +79,15 @@ export class Assembler {
     this._assembly = code;
     this._ast = undefined;
     this._bytes = undefined;
-    this._labels = {};
+    this._labels.clear();
+    this._symbols.clear();
   }
 
   public getAssemblyCode(): string { return this._assembly; }
   public getAST(): IAssemblyLine[] | undefined { return this._ast; }
   public getBytes(): ArrayBuffer | undefined { return this._bytes; }
   public getLabels() { return Object.keys(this._labels); }
-  public getLabel(label: string): number | undefined { return this._labels[label]; }
+  public getLabel(label: string): number | undefined { return this._labels.get(label); }
 
   /**
    * Parse assembly code string
@@ -94,6 +96,9 @@ export class Assembler {
    */
   public parse(assembly: string, origin: string = "<anonymous>"): void {
     let ast: IAssemblyLine[], nums: number[];
+    this._labels.clear();
+    this._symbols.clear();
+
     try {
       ast = this._parseToAST(assembly);
     } catch (e) {
@@ -122,8 +127,7 @@ export class Assembler {
    * Parse assembly string, return AST.
    */
   private _parseToAST(assembly: string): IAssemblyLine[] {
-    const ast: Array<IAssemblyLine> = [];
-    this._labels = {};
+    const ast: IAssemblyLine[] = [];
 
     const lines = assembly.split(/\r|\n|\r\n/g);
     for (let i = 0; i < lines.length; i++) {
@@ -153,10 +157,10 @@ export class Assembler {
           } else {
             ast.push(instructionLine);
           }
-        } else if (parts[0][parts[0].length - 1] === ':') {
+        } else if (parts[0][parts[0].length - 1] === ':') { // Label
           const label = parts[0].substr(0, parts[0].length - 1);
           if (parts.length === 1) {
-            if (isValidLabel(label)) {
+            if (isValidSymbol(label)) {
               const labelLine: IAssemblyLabelDeclarationLine = { type: AssemblyLineType.Label, label, };
               ast.push(labelLine);
             } else {
@@ -166,6 +170,37 @@ export class Assembler {
             }
           } else {
             const error = new AssemblerError(`Syntax Error: Expected newline after label declaration`, parts[1]);
+            error.setUnderlineString(line);
+            throw error;
+          }
+        } else if (parts[0][0] === '#') {
+          let directive = parts[0].substr(1);
+
+          if (directive === 'stop') { // Stop parsing
+            break;
+          } else if (directive === 'skip') { // Skip next line
+            i++;
+            continue;
+          } else if (directive === 'define') {
+            // Valid name?
+            if (isValidSymbol(parts[1])) {
+              // Already defined?
+              if (this._symbols.has(parts[1])) {
+                const error = new AssemblerError(`SYMBOL: '${parts[1]}' symbol redeclared`, parts[1]);
+                error.setUnderlineString(line);
+                throw error;
+              } else {
+                let string = line.substr("#define".length);
+                string = string.substr(string.indexOf(parts[1]) + parts[1].length).trim();
+                this._symbols.set(parts[1], string);
+              }
+            } else {
+              const error = new AssemblerError(`Syntax Error: invalid syntax: expected symbol`, parts[1]);
+              error.setUnderlineString(line);
+              throw error;
+            }
+          } else {
+            const error = new AssemblerError(`Syntax Error: unknown directive`, directive);
             error.setUnderlineString(line);
             throw error;
           }
@@ -194,13 +229,12 @@ export class Assembler {
   private _astToNums(ast: IAssemblyLine[]): number[] {
     const nums: number[] = [];
     let address = this.startAddress; // Current address
-    this._labels = {};
 
     // Resolve label addresses
     for (let i = 0; i < ast.length; i++) {
       const line = ast[i];
       if (line.type === AssemblyLineType.Label) {
-        this._labels[(line as IAssemblyLabelDeclarationLine).label] = address;
+        this._labels.set((line as IAssemblyLabelDeclarationLine).label, address);
       } else if (line.type === AssemblyLineType.Instruction) {
         address += 1 + (line as IAssemblyInstructionLine).args.length;
       }
@@ -208,10 +242,11 @@ export class Assembler {
 
     // Resolve label names
     ast.forEach(line => {
-      if (line.args) line.args.forEach(arg => {
-        if (arg.type === AssemblerType.Label) {
+      if (line.args) line.args.forEach((arg, i) => {
+        if (arg.type === AssemblerType.Symbol) {
           arg.type = AssemblerType.Address;
-          arg.num = this._resolveLabel(line, arg.value);
+          if (this._labels.has(arg.value)) arg.num = this._labels.get(arg.value);
+          else throw new AssemblerError(`'${line.instruction}' operand ${i}: SYMBOL: Cannot find symbol '${arg.value}'`, arg.value);
         }
       });
     });
@@ -250,7 +285,6 @@ export class Assembler {
       const arg = args[i];
       if (arg.length == 0) continue;
       let obj = this._parseArgument(arg);
-      if (obj.type == undefined) throw new AssemblerError('Syntax Error: operand type cannot be determined', arg);
       line.args.push(obj);
     }
 
@@ -281,6 +315,13 @@ export class Assembler {
   /** Parse an argument string and return an information object */
   private _parseArgument(argument: string): IAssemblerToken {
     const token: IAssemblerToken = { type: undefined, value: argument, num: undefined, };
+    let expandedSymbol;
+
+    // Symbol?
+    if (this._symbols.has(argument)) {
+      expandedSymbol = argument;
+      argument = this._symbols.get(argument);
+    }
 
     // Pointer?
     if (argument.length > 1 && argument[0] == '*') {
@@ -342,9 +383,15 @@ export class Assembler {
           token.type = AssemblerType.Address;
           token.num = addr;
         } else {
-          // Label?
-          if (isValidLabel(argument)) {
-            token.type = AssemblerType.Label;
+          // Symbol?
+          if (isValidSymbol(argument)) {
+            token.type = AssemblerType.Symbol;
+          } else {
+            if (expandedSymbol) {
+              throw new AssemblerError(`Syntax Error: operand type cannot be determined: ${argument} (expanded from constant ${expandedSymbol})`, expandedSymbol);
+            } else {
+              throw new AssemblerError(`Syntax Error: operand type cannot be determined: ${argument}`, argument);
+            }
           }
         }
       }
@@ -372,17 +419,6 @@ export class Assembler {
   }
 
   /**
-   * Return value at label, or throw error
-   */
-  private _resolveLabel(info: IAssemblyInstructionLine, label: string): number {
-    if (this._labels[label] === undefined) {
-      throw new AssemblerError(`${info.instruction}: Unable to resolve label '${label}'`, label);
-    } else {
-      return this._labels[label];
-    }
-  }
-
-  /**
    * De-compile code
    * @param useLabels - Transform JUMP commands to BRANCH commands with labels?
    */
@@ -391,7 +427,7 @@ export class Assembler {
     this._assembly = '';
     const numbers = bufferToArray(bytes, this._cpu.numType);
     const lines: string[][] = [];
-    this._labels = {};
+    this._labels.clear();
     let currentLabelN = 1;
 
     for (let i = 0; i < numbers.length;) {
@@ -406,27 +442,27 @@ export class Assembler {
               if (mnemonic === 'JMP_CONST') {
                 skipMain = true;
                 let label = `label${currentLabelN++}`;
-                this._labels[label] = numbers[i++];
+                this._labels.set(label, numbers[i++]);
                 line = ['B', label];
               } else if (mnemonic === 'JEQ_CONST') {
                 skipMain = true;
                 let label = `label${currentLabelN++}`;
-                this._labels[label] = numbers[i++];
+                this._labels.set(label, numbers[i++]);
                 line = ['BEQ', label];
               } else if (mnemonic === 'JNE_CONST') {
                 skipMain = true;
                 let label = `label${currentLabelN++}`;
-                this._labels[label] = numbers[i++];
+                this._labels.set(label, numbers[i++]);
                 line = ['BNE', label];
               } else if (mnemonic === 'JLT_CONST') {
                 skipMain = true;
                 let label = `label${currentLabelN++}`;
-                this._labels[label] = numbers[i++];
+                this._labels.set(label, numbers[i++]);
                 line = ["BLT", label];
               } else if (mnemonic === 'JGT_CONST') {
                 skipMain = true;
                 let label = `label${currentLabelN++}`;
-                this._labels[label] = numbers[i++];
+                this._labels.set(label, numbers[i++]);
                 line = ["BGT", label];
               }
             }
@@ -480,17 +516,15 @@ export class Assembler {
     }
 
     // Place labels into array
-    for (let label in this._labels) {
-      if (this._labels.hasOwnProperty(label)) {
-        for (let i = 0, k = 0; i < lines.length; i++) {
-          for (let j = 0; j < lines[i].length; j++, k++) {
-            if (k === this._labels[label]) {
-              lines.splice(i, 0, [label + ':']);
-            }
+    this._labels.forEach((addr, label) => {
+      for (let i = 0, k = 0; i < lines.length; i++) {
+        for (let j = 0; j < lines[i].length; j++, k++) {
+          if (k === this._labels.get(label)) {
+            lines.splice(i, 0, [label + ':']);
           }
         }
       }
-    }
+    });
 
     this._assembly = lines.map(arr => arr.join(' ')).join('\n');
   }
