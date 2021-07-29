@@ -1,5 +1,5 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine } from "../types/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, ILabelMap, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
 import { isValidLabel, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
@@ -67,6 +67,7 @@ export class Assembler {
   private _labels: ILabelMap = {};
   public startAddress = 0;
   public removeNOPs: boolean = false;
+  public replaceCommandMap: IReplaceCommandMap = {};
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
@@ -136,7 +137,7 @@ export class Assembler {
         const instruction = this._getInstructionFromString(parts[0].toUpperCase());
         if (instruction !== null) {
           parts.shift();
-          const uinstruction = instruction.toUpperCase();
+          let uinstruction = instruction.toUpperCase();
           const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, instruction: undefined, opcode: NaN, args: [], };
           try {
             this._parseInstruction(uinstruction, parts, instructionLine);
@@ -147,7 +148,7 @@ export class Assembler {
             }
             throw e;
           }
-          if (this.removeNOPs && instructionLine.instruction === 'NOP'){
+          if (this.removeNOPs && instructionLine.instruction === 'NOP') {
             // Do not add NOP instruction
           } else {
             ast.push(instructionLine);
@@ -195,7 +196,7 @@ export class Assembler {
     let address = this.startAddress; // Current address
     this._labels = {};
 
-    // Resolve labels
+    // Resolve label addresses
     for (let i = 0; i < ast.length; i++) {
       const line = ast[i];
       if (line.type === AssemblyLineType.Label) {
@@ -205,33 +206,26 @@ export class Assembler {
       }
     }
 
+    // Resolve label names
+    ast.forEach(line => {
+      if (line.args) line.args.forEach(arg => {
+        if (arg.type === AssemblerType.Label) {
+          arg.type = AssemblerType.Address;
+          arg.num = this._resolveLabel(line, arg.value);
+        }
+      });
+    });
+
     for (let i = 0; i < ast.length; i++) {
       try {
         let line = ast[i];
 
         if (line.type === AssemblyLineType.Instruction) {
           const info = line as IAssemblyInstructionLine;
-          if (info.instruction === 'B') {
-            nums.push(this._imap.JMP_CONST.opcode);
-            nums.push(this._resolveLabel(info));
-          } else if (info.instruction === 'BEQ') {
-            nums.push(this._imap.JEQ_CONST.opcode);
-            nums.push(this._resolveLabel(info));
-          } else if (info.instruction === 'BNE') {
-            nums.push(this._imap.JNE_CONST.opcode);
-            nums.push(this._resolveLabel(info));
-          } else if (info.instruction === 'BLT') {
-            nums.push(this._imap.JLT_CONST.opcode);
-            nums.push(this._resolveLabel(info));
-          } else if (info.instruction === 'BGT') {
-            nums.push(this._imap.JGT_CONST.opcode);
-            nums.push(this._resolveLabel(info));
-          } else {
-            nums.push(info.opcode); // Push opcode to nums array
-            info.args.forEach(arg => nums.push(arg.num));
-            address += 1 + info.args.length;
-          }
-        } else if (line.type === AssemblyLineType.Label) {} else {
+          nums.push(info.opcode); // Push opcode to nums array
+          info.args.forEach(arg => nums.push(arg.num));
+          address += 1 + info.args.length;
+        } else if (line.type === AssemblyLineType.Label) { } else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
           error.setUnderlineString(json);
@@ -366,6 +360,9 @@ export class Assembler {
    * Return instruction if given string is an instruction
   */
   private _getInstructionFromString(string: string): string | null {
+    // Replace command via replaceCommandMap?
+    if (string in this.replaceCommandMap) string = this.replaceCommandMap[string].replaceWith;
+
     for (let instruction in this._imap) {
       if (this._imap.hasOwnProperty(instruction)) {
         if (this._imap[instruction].mnemonic === string) return string;
@@ -377,8 +374,7 @@ export class Assembler {
   /**
    * Return value at label, or throw error
    */
-  private _resolveLabel(info: IAssemblyInstructionLine): number {
-    const label = info.args[0].value;
+  private _resolveLabel(info: IAssemblyInstructionLine, label: string): number {
     if (this._labels[label] === undefined) {
       throw new AssemblerError(`${info.instruction}: Unable to resolve label '${label}'`, label);
     } else {
@@ -443,13 +439,13 @@ export class Assembler {
                 try {
                   if (info.args[j] === AssemblerType.Register) {
                     let register = this._cpu.registerMap[number];
-                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
+                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number));
                     line.push(register);
                   } else if (info.args[j] === AssemblerType.Constant) {
                     line.push('#' + number);
                   } else if (info.args[j] === AssemblerType.RegisterPtr) {
                     let register = this._cpu.registerMap[number];
-                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number)); 
+                    if (register === undefined) throw new AssemblerError(`Cannot find register with offset +0x${number.toString(16)}`, this._cpu.toHex(number));
                     line.push('*' + register);
                   } else {
                     line.push(number.toString());

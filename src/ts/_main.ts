@@ -71,6 +71,7 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   globals.cpu = cpu;
   globals.instructionSet = instructionSet;
   const assembler = new Assembler(cpu, instructionSet);
+  assembler.replaceCommandMap = globals.asmReplaceCommandsMap;
   globals.assembler = assembler;
 
   // SET UP TABS
@@ -125,18 +126,29 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
 }
 
 function __app_main_() {
-  // console.clear();
   tabCode.properties.insertHalt = false;
-  __app_init_(CPUModel.AQAARMExt, {
-    numType: 'float32',
-  });
-  tabCode.properties.partailTranslationWrapper.style.display = "none";
+  // tabCode.properties.partailTranslationWrapper.style.display = "none";
 
+  // Set up pre-assembly command replation object
+  [
+    ['B', 'JMP', 'Jump to [label]'],
+    ['BEQ', 'JEQ', 'Jump to [label] if CMP is \'equal to\''],
+    ['BNE', 'JNE', 'Jump to [label] if CMP is not \'equal to\''],
+    ['BLT', 'JLT', 'Jump to [label] if CMP is \'less than\''],
+    ['BGT', 'JGT', 'Jump to [label] if CMP is \'greater to\''],
+  ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
+
+  // Initiate application
+  __app_init_(CPUModel.AQAARMExt, {
+    numType: 'int32',
+  });
+
+  // Prompt user
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
 
   globals.tabs._.open("code");
 
-  const lines = [`MOV r2, #2`, `OUTSTR *r2`, `HALT`];
+  const lines = [`loop:`, `B loop`, `HALT`];
   tabCode.properties.assemblyCodeInput.value = lines.join('\n');
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

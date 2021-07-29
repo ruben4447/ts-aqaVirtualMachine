@@ -4,7 +4,7 @@ import type MemoryView from "./classes/MemoryView";
 import type RegisterView from "./classes/RegisterView";
 import type CustomScreen from "./classes/Screen";
 import type Tabs from "./classes/Tabs";
-import type { IInstructionSet } from "./types/Assembler";
+import type { IInstructionSet, IReplaceCommandMap } from "./types/Assembler";
 import type { ICodeTabProperties, ICPUTabProperties, IInstructionSetTabProperties, IMemoryTabProperties, IRunTabProperties } from "./types/Tabs";
 
 interface IGlobals {
@@ -13,6 +13,7 @@ interface IGlobals {
   base: number; // Base to view numbers in
   cpu: CPU; // Main CPU
   assembler: Assembler; // Main assembler
+  asmReplaceCommandsMap: IReplaceCommandMap;
   output: CustomScreen; // Main output console
   tabs: {
     _: Tabs; // Tab manager
@@ -33,6 +34,7 @@ const globals: IGlobals = {
   base: 16,
   cpu: undefined,
   assembler: undefined,
+  asmReplaceCommandsMap: {},
   output: undefined,
   tabs: {
     _: undefined,

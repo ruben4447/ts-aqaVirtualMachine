@@ -22,6 +22,39 @@ export class ARMProcessorExtended extends ARMProcessor {
     } catch (e) {
       // Try our extended functions
       switch (opcode) {
+        case this.instructionSet.STR_PTR: {
+          // STR register registerPtr
+          const register = this.fetch(), registerPtr = this.fetch();
+          const registerValue = this.readRegister(register), address = this.readRegister(registerPtr);
+          info.args = [register, registerPtr];
+          if (this.executionConfig.commentary) {
+            info.text = `Load value in register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to memory address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)})`;
+          }
+          this.writeMemory(address, registerValue);
+          break;
+        }
+        case this.instructionSet.LDR_PTR: {
+          // LDR register registerPtr
+          const register = this.fetch(), registerPtr = this.fetch();
+          const address = this.readRegister(registerPtr), addressValue = this.readMemory(address);
+          info.args = [register, registerPtr];
+          if (this.executionConfig.commentary) {
+            info.text = `Load value at address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)} -> 0x${this.toHex(addressValue)}) into register ${this.registerMap[register]}`;
+          }
+          this.writeRegister(register, addressValue);
+          break;
+        }
+        case this.instructionSet.MOV_REGPTR_REG: {
+          // MOV registerPtr register
+          const registerPtr = this.fetch(), register = this.fetch();
+          const address = this.readRegister(registerPtr), registerValue = this.readRegister(register);
+          info.args = [registerPtr, register];
+          if (this.executionConfig.commentary) {
+            info.text = `Copy value at register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)})`;
+          }
+          this.writeMemory(address, registerValue);
+          break;
+        }
         case this.instructionSet.INP: {
           // INP registers
           let register = this.fetch();
@@ -229,6 +262,18 @@ export class ARMProcessorExtended extends ARMProcessor {
             info.text = `Store register ${this.registerMap[register2]} ** 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} ** 0x${constantHex} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
+          break;
+        }
+        case this.instructionSet.SQRT_REG: {
+          // SQRT register
+          const register = this.fetch();
+          const registerVal = this.readRegister(register);
+          const result = Math.sqrt(registerVal);
+          info.args = [register];
+          if (this.executionConfig.commentary) {
+            info.text = `Caculate register sqrt(${this.registerMap[register]})\nsqrt(0x${this.toHex(registerVal)}) = 0x${this.toHex(result)}`;
+          }
+          this.writeRegister(register, result);
           break;
         }
         default:

@@ -177,10 +177,10 @@ function generateHTML(): HTMLDivElement {
   tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
-  // Safe NULL
+  // Safe NOP
   tr = document.createElement('tr');
   tbody.appendChild(tr);
-  tr.insertAdjacentHTML('beforeend', `<th><abbr title='HALT program execution on a NULL instruction'>Safe NULL</abbr></th>`);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='HALT program execution on a NOP instruction'>Safe NOP</abbr></th>`);
   td = document.createElement("td");
   tr.appendChild(td);
   const inputSafeNull = document.createElement("input");

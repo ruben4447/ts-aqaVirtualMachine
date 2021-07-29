@@ -115,6 +115,34 @@ export const instructionSet: IInstructionSet = {
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
     desc: "[register2] ** [constant] and store in [register1]",
   },
+  SQRT_REG: {
+    mnemonic: 'SQRT',
+    opcode: 0x2F,
+    args: [AssemblerType.Register],
+    desc: "Calculate square root of [register] and store in [register]",
+  },
+  //#endregion
+
+  //#region Memory Managment
+  LDR_PTR: {
+    mnemonic: 'LDR',
+    opcode: 0x15,
+    args: [AssemblerType.Register, AssemblerType.RegisterPtr],
+    desc: "Load the value stored at the address in register [registerPtr] into register [register]",
+  },
+  STR_PTR: {
+    mnemonic: "STR",
+    opcode: 0x16,
+    args: [AssemblerType.Register, AssemblerType.RegisterPtr],
+    desc: "Store the value that is in register [register] to address in register [registerPtr]",
+  },
+  MOV_REGPTR_REG: {
+    mnemonic: "MOV",
+    opcode: 0x17,
+    args: [AssemblerType.RegisterPtr, AssemblerType.Register],
+    desc: "Move value stored in register [register] to the address stored in [registerPtr]",
+    isAQA: false,
+  },
   //#endregion
 };
 

@@ -4,6 +4,7 @@ import { AssemblerType, IAssemblerToken } from "../types/Assembler";
 export function matchesTypeSignature(tokens: IAssemblerToken[], types: AssemblerType[]): boolean {
   if (tokens.length !== types.length) return false;
   for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].type === AssemblerType.Label && types[i] === AssemblerType.Constant) continue; // Labels may be converted to constant values
     if (tokens[i].type !== types[i]) return false;
   }
   return true;
