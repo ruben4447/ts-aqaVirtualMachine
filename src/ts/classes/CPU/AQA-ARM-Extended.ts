@@ -1,6 +1,6 @@
 import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
-import { arrayToBuffer, hex } from "../../utils/general";
-import { CMP, compare } from '../../utils/CPU';
+import { arrayToBuffer, castNumber, getNumTypeInfo, hex, numberToString } from "../../utils/general";
+import { CMP, compare, numberTypeMap } from '../../utils/CPU';
 import { instructionSet as aqaInstructionSetExtended } from '../../instruction-set/aqa-arm-extended';
 import ARMProcessor from "./AQA-ARM";
 
@@ -276,9 +276,25 @@ export class ARMProcessorExtended extends ARMProcessor {
           this.writeRegister(register, result);
           break;
         }
+        case this.instructionSet.CST_CONST: {
+          // CST register constant
+          const register = this.fetch(), constant = this.fetch();
+          const dt = numberTypeMap[constant];
+          if (dt === undefined) throw new Error(`[SIGABRT] PROGRAM CRASH - UNKNOWN TYPE FLAG ${constant}`);
+          const registerVal = this.readRegister(register);
+          info.args = [register];
+          // CAST
+          const castType = getNumTypeInfo(dt);
+          const number = castNumber(registerVal, this.numType, castType);
+          if (this.executionConfig.commentary) {
+            info.text = `Cast register ${this.registerMap[register]} from type ${this.numType.type} (${numberTypeMap[this.numType.type]}) to ${castType.type} (${constant})\n0x${numberToString(this.numType, registerVal, 16)} => 0x${numberToString(this.numType, number, 16)}`;
+          }
+          this.writeRegister(register, number);
+          break;
+        }
         default:
           info.termination = true;
-          throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);
+          this._throwUnknownOpcode(opcode);
       }
     }
     info.termination = !continueExec;

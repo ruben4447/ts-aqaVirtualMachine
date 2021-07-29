@@ -16,6 +16,17 @@ export function getNumericBaseFromPrefix(prefix: string): number | undefined {
   }
 }
 
+/** Create Enumeration object from an input object. */
+export function createEnum(object: object): object {
+  const enumeration = {};
+  for (let key in object)
+    if (object.hasOwnProperty(key)) {
+      enumeration[key] = object[key];
+      enumeration[object[key]] = key;
+    }
+  return enumeration;
+}
+
 export function underlineStringPortion(string: string, startPos: number, length: number = 1, prefix: string = "") {
   return prefix + string + '\n' + (' '.repeat(startPos + prefix.length)) + ('~'.repeat(length));;
 }
@@ -36,57 +47,74 @@ export const numericTypes: NumberType[] = ["int8", "uint8", "int16", "uint16", "
 
 /** Given number type, return information */
 export function getNumTypeInfo(type: NumberType): INumberType {
-  let getMethod: DataviewGetMethod, setMethod: DataviewSetMethod, bytes: number;
+  let getMethod: DataviewGetMethod, setMethod: DataviewSetMethod, bytes: number, constructor;
 
   switch (type) {
     case "int8":
       getMethod = "getInt8";
       setMethod = "setInt8";
       bytes = 1;
+      constructor = Int8Array;
       break;
     case "uint8":
       getMethod = "getUint8";
       setMethod = "setUint8";
       bytes = 1;
+      constructor = Uint8Array;
       break;
     case "int16":
       getMethod = "getInt16";
       setMethod = "setInt16";
       bytes = 2;
+      constructor = Int16Array;
       break;
     case "uint16":
       getMethod = "getUint16";
       setMethod = "setUint16";
       bytes = 2;
+      constructor = Uint16Array;
       break;
     case "int32":
       getMethod = "getInt32";
       setMethod = "setInt32";
       bytes = 4;
+      constructor = Int32Array;
       break;
     case "uint32":
       getMethod = "getUint32";
       setMethod = "setUint32";
       bytes = 4;
+      constructor = Uint32Array;
       break;
     case "float32":
       getMethod = "getFloat32";
       setMethod = "setFloat32";
       bytes = 4;
+      constructor = Float32Array;
       break;
     case "float64":
       getMethod = "getFloat64";
       setMethod = "setFloat64";
       bytes = 8;
+      constructor = Float64Array;
       break;
     default:
       throw new TypeError(`Unknown numeric type '${type}'`);
   }
 
   const isInt = type.indexOf("int") !== -1
-  return { type, getMethod, setMethod, bytes, isInt };
+  return { type, getMethod, setMethod, bytes, isInt, constructor };
 }
 globalThis.getNumTypeInfo = getNumTypeInfo;
+
+export function castNumber(number: number, fromType: INumberType, toType: INumberType) {
+  let size = Math.max(fromType.bytes, toType.bytes) / fromType.bytes;
+  let arrFrom = new fromType.constructor(size);
+  arrFrom[0] = number;
+  let arrTo = new toType.constructor(arrFrom.buffer);
+  return arrTo[0];
+}
+globalThis.castNumber = castNumber;
 
 export const hex = (n: number, len: number = 0) => (+n).toString(16).toUpperCase().padStart(len, '0');
 

@@ -216,9 +216,9 @@ export class RSProcessor extends CPU {
                 this.writeRegister(this._acc, result);
                 break;
             }
-            default: 
+            default:
                 info.termination = true;
-                throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);
+                this._throwUnknownOpcode(opcode);
         }
         info.termination = !continueExec;
         return continueExec;

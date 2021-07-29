@@ -1,6 +1,6 @@
 import { IInstructionSet } from "../types/Assembler";
 import { ICPUInstructionSet } from "../types/CPU";
-import { hex } from "./general";
+import { createEnum, hex } from "./general";
 
 /** Comparison results. Note, no negative numbers to support unsigned data types. */
 export enum CMP {
@@ -33,3 +33,15 @@ export function generateCPUInstructionSet(instructionSet: IInstructionSet): ICPU
   }
   return data;
 }
+
+/** Map number types to their corresponding numbers */
+export const numberTypeMap = createEnum({
+  uint8: 8,
+  int8: 9,
+  int16: 17,
+  uint16: 16,
+  int32: 32,
+  uint32: 33,
+  float32: 30,
+  float64: 64,
+});

@@ -13,6 +13,7 @@ export interface INumberType {
   getMethod: DataviewGetMethod;
   setMethod: DataviewSetMethod;
   isInt: boolean;
+  constructor: any; // Constructor for type array
 };
 
 export type Bit = 0 | 1;

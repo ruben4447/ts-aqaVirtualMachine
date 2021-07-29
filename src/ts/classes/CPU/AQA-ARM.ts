@@ -534,7 +534,7 @@ export class ARMProcessor extends CPU {
       }
       default:
         info.termination = true;
-        throw new Error(`execute: unknown opcode 0x${opcode.toString(16)}`);
+        this._throwUnknownOpcode(opcode);
     }
     info.termination = !continueExec;
     return continueExec;

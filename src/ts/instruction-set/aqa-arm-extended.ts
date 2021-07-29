@@ -141,7 +141,13 @@ export const instructionSet: IInstructionSet = {
     opcode: 0x17,
     args: [AssemblerType.RegisterPtr, AssemblerType.Register],
     desc: "Move value stored in register [register] to the address stored in [registerPtr]",
-    isAQA: false,
+  },
+
+  CST_CONST: {
+    mnemonic: "CST",
+    opcode: 0x19,
+    args: [AssemblerType.Register, AssemblerType.Constant],
+    desc: "Cast value in [register] to data type represented by [constant]",
   },
   //#endregion
 };

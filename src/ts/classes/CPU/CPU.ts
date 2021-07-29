@@ -14,7 +14,7 @@ export class CPU {
   public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
   public static readonly defaultNumType: NumberType = 'float32';
   public static readonly requiredRegisters: string[] = ["ip"];
-  
+
   public readonly model: CPUModel = undefined; // NO MODEL
   public readonly instructionSet: ICPUInstructionSet;
   protected readonly reversedInstructionSet: IReversedCPUInstructionSet;
@@ -35,8 +35,7 @@ export class CPU {
     this.instructionSet = generateCPUInstructionSet(instructionSet);
     this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
-    const numType = config.numType || defaultNumType;
-    this.numType = getNumTypeInfo(numType);
+    this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
 
     this.registerMap = config.registerMap || defaultRegisters;
     for (const requiredRegister of requiredRegisters)
@@ -65,10 +64,11 @@ export class CPU {
   }
 
   /** Read value of register at said index */
-  public readRegister(register: number | string): number {
+  public readRegister(register: number | string, numType?: INumberType): number {
+    numType = numType ?? this.numType;
     let index = typeof register === 'string' ? this.registerMap.indexOf(register) : Math.floor(register);
     if (isNaN(index) || index === -1) throw new Error(`readRegister: invalid argument provided '${register}'`);
-    return this._registers[this.numType.getMethod](index * this.numType.bytes);
+    return this._registers[numType.getMethod](index * this.numType.bytes);
   }
 
   /** Write value to register at said index */
@@ -211,7 +211,7 @@ export class CPU {
       try {
         cont = this.execute(opcode, info);
       } catch (e) {
-        const error = new Error(`cycle: failed to execute opcode 0x${opcode.toString(16)}:\n${e}`);
+        const error = new Error(`cycle: failed to execute instruction 0x${opcode.toString(16)}:\n${e}`);
         info.error = error;
         info.text = e.message;
         throw error;
@@ -222,6 +222,11 @@ export class CPU {
       info.termination = true;
       throw new Error(`cycle: failed to complete CPU cycle where ip = 0x${ip}:\n${e}`);
     }
+  }
+
+  /** Throw error when opcode is unknown */
+  _throwUnknownOpcode(opcode) {
+    throw new Error(`[SIGILL] illegal instruction 0x${opcode.toString(16)}`);
   }
 }
 

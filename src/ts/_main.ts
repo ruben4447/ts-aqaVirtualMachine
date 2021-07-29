@@ -148,7 +148,7 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-  const lines = [`#define var "Hello, World"`, `MOV r1, var`, `HALT`];
+  const lines = [`MOV r1, #100`, `MOV r2, r1`, `CST r2, #32`, `HALT`];
   tabCode.properties.assemblyCodeInput.value = lines.join('\n');
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
