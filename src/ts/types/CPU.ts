@@ -7,6 +7,7 @@ export interface ICPUInstructionSet {
 
 export enum CPUModel {
   AQAARM = 'AQA ARM',
+  AQAARMExt = 'AQA ARM Extended',
   RS = 'RS',
 }
 

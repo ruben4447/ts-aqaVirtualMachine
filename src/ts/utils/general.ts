@@ -244,7 +244,7 @@ export function insertNumericalBaseInput(parent: HTMLElement, callback: (n: numb
     let num = parseInt(input.value, base);
     callback(num);
   };
-  
+
   const wrapper = document.createElement('span');
   parent.appendChild(wrapper);
   wrapper.classList.add('multi-base-input');
@@ -270,4 +270,9 @@ export function insertNumericalBaseInput(parent: HTMLElement, callback: (n: numb
   wrapper.appendChild(input);
 
   return input;
+}
+
+/** Sort object by numeric key value */
+export function sortObjectByKey<T>(o: T, key: string): T {
+  return Object.fromEntries(Object.entries(o).sort(([_a, a], [_b, b]) => a[key] - b[key])) as T;
 }

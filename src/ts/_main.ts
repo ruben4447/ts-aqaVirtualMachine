@@ -13,9 +13,11 @@ import * as utils from './utils/general';
 import { loadCodeFont, withinState, writeInCentre, writeMultilineInCentre } from "./utils/Screen";
 
 import { instructionSet as aqaInstructionSet } from './instruction-set/aqa-arm';
+import { instructionSet as aqaInstructionSetExtended } from './instruction-set/aqa-arm-extended';
 import { instructionSet as rsInstructionSet } from './instruction-set/rs';
 
 import ARMProcessor from "./classes/CPU/AQA-ARM";
+import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
@@ -53,6 +55,10 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
     case CPUModel.AQAARM:
       cpu = new ARMProcessor(cpuConfiguration);
       instructionSet = aqaInstructionSet;
+      break;
+    case CPUModel.AQAARMExt:
+      cpu = new ARMProcessorExtended(cpuConfiguration);
+      instructionSet = aqaInstructionSetExtended;
       break;
     case CPUModel.RS:
       cpu = new RSProcessor(cpuConfiguration);
@@ -119,18 +125,18 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
 }
 
 function __app_main_() {
-  console.clear();
+  // console.clear();
   tabCode.properties.insertHalt = false;
-  __app_init_(CPUModel.RS, {
+  __app_init_(CPUModel.AQAARMExt, {
     numType: 'float32',
   });
   tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
-  
+
   globals.tabs._.open("code");
 
-  const lines = [`MOV r2, #2`, `INC r2`, `HALT`];
+  const lines = [`MOV r2, #2`, `OUTSTR *r2`, `HALT`];
   tabCode.properties.assemblyCodeInput.value = lines.join('\n');
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

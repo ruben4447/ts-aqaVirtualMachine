@@ -5,61 +5,11 @@ import { AssemblerType, IInstructionSet } from "../types/Assembler";
 
 /** For assembler; list every instruction */
 export const instructionSet: IInstructionSet = {
-  NULL: {
-    mnemonic: "NULL",
+  NOP: {
+    mnemonic: "NOP",
     opcode: 0x00,
     args: [],
     desc: "Skips to next instruction (or acts as HALT is in safe mode)",
-    isAQA: false,
-  },
-
-  INP: {
-    mnemonic: "INP",
-    opcode: 0x01,
-    args: [AssemblerType.Register],
-    desc: "Prompt for input, and load into register [register]",
-    isAQA: false,
-  },
-  INPSTR_ADDR: {
-    mnemonic: "INPSTR",
-    opcode: 0x02,
-    args: [AssemblerType.Address],
-    desc: "Prompt for string input, and load into memory starting at address [address]",
-    isAQA: false,
-  },
-  INPSTR_PTR: {
-    mnemonic: "INPSTR",
-    opcode: 0x03,
-    args: [AssemblerType.RegisterPtr],
-    desc: "Prompt for string input, and load into memory starting at address stored in register [registerPtr]",
-    isAQA: false,
-  },
-  OUT: {
-    mnemonic: "OUT",
-    opcode: 0x05,
-    args: [AssemblerType.Register],
-    desc: "Output contents of register [register]",
-    isAQA: false,
-  },
-  OUTSTR_REG: {
-    mnemonic: "OUTSTR",
-    opcode: 0x06,
-    args: [AssemblerType.Register],
-    desc: "Output contents of register [register] as ASCII",
-    isAQA: false,
-  },
-  OUTSTR_ADDR: {
-    mnemonic: "OUTSTR",
-    opcode: 0x07,
-    args: [AssemblerType.Address],
-    desc: "Output memory from address [address] as a null-terminates string",
-    isAQA: false,
-  },
-  OUTSTR_PTR: {
-    mnemonic: "OUTSTR",
-    opcode: 0x08,
-    args: [AssemblerType.RegisterPtr],
-    desc: "Output memory from address in register [registerPtr] as a null-terminates string",
     isAQA: false,
   },
 
@@ -173,72 +123,6 @@ export const instructionSet: IInstructionSet = {
     args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
     desc: "[register2] - [constant] and store in [register1]",
     isAQA: true,
-  },
-
-  MUL_REG: {
-    mnemonic: "MUL",
-    opcode: 0x26,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
-    desc: "[register2] * [register3] and store in [register1]",
-    isAQA: false,
-  },
-  MUL_ADDR: {
-    mnemonic: "MUL",
-    opcode: 0x27,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
-    desc: "[register2] * value at [address] and store in [register1]",
-    isAQA: false,
-  },
-  MUL_CONST: {
-    mnemonic: "MUL",
-    opcode: 0x28,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
-    desc: "[register2] * [constant] and store in [register1]",
-    isAQA: false,
-  },
-
-  DIV_REG: {
-    mnemonic: "DIV",
-    opcode: 0x29,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
-    desc: "[register2] / [register3] and store in [register1]",
-    isAQA: false,
-  },
-  DIV_ADDR: {
-    mnemonic: "DIV",
-    opcode: 0x2A,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
-    desc: "[register2] / value at [address] and store in [register1]",
-    isAQA: false,
-  },
-  DIV_CONST: {
-    mnemonic: "DIV",
-    opcode: 0x2B,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
-    desc: "[register2] / [constant] and store in [register1]",
-    isAQA: false,
-  },
-
-  EXP_REG: {
-    mnemonic: "EXP",
-    opcode: 0x2C,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
-    desc: "[register2] ** [register3] and store in [register1]",
-    isAQA: false,
-  },
-  EXP_ADDR: {
-    mnemonic: "EXP",
-    opcode: 0x2D,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
-    desc: "[register2] ** value at [address] and store in [register1]",
-    isAQA: false,
-  },
-  EXP_CONST: {
-    mnemonic: "EXP",
-    opcode: 0x2E,
-    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
-    desc: "[register2] ** [constant] and store in [register1]",
-    isAQA: false,
   },
   // #endregion Maths
 

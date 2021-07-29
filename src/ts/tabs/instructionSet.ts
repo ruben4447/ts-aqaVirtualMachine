@@ -2,7 +2,7 @@ import globals from "../globals";
 import { AssemblerType } from "../types/Assembler";
 import { CPUModel } from "../types/CPU";
 import { IInstructionSetTabProperties, ITabInfo } from "../types/Tabs";
-import { hex } from "../utils/general";
+import { hex, sortObjectByKey } from "../utils/general";
 
 export const info: ITabInfo = {
   content: undefined,
@@ -22,7 +22,7 @@ function generateAssemblerInstructionSetHTML(): HTMLDivElement {
   const tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
-  const instructionSet = globals.instructionSet;
+  const instructionSet = sortObjectByKey(globals.instructionSet, 'opcode');
   let lastMnemonic: string; // Last mnemonic that was come accross
   for (const instruction in instructionSet) {
     if (instructionSet.hasOwnProperty(instruction)) {

@@ -2,10 +2,11 @@
   "name": "aqa-virtual-machine",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "build/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "parcel index.html"
+    "start": "parcel index.html",
+    "build": "parcel build index.html --public-url ./"
   },
   "author": "Ruben Saunders",
   "license": "ISC",
