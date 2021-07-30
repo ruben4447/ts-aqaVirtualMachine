@@ -346,7 +346,7 @@ export class Assembler {
     } else if (argument.length > 1 && argument[0] == '#') {
       // Constant value?
       token.type = AssemblerType.Constant;
-      const base = getNumericBaseFromPrefix(argument[1]);
+      const base = argument[1] === '-' ? undefined : getNumericBaseFromPrefix(argument[1]);
       if (base == undefined) {
         token.num = +argument.slice(1); // No base; default of decimal
       } else {
@@ -370,7 +370,7 @@ export class Assembler {
         token.num = registerIndex;
       } else {
         // Extract address from argument
-        let base = getNumericBaseFromPrefix(argument[0]), addr: number;
+        let base = argument[0] === '-' ? undefined : getNumericBaseFromPrefix(argument[0]), addr: number;
         if (base === undefined) {
           addr = parseInt(argument); // No base
         } else {

@@ -140,7 +140,7 @@ function __app_main_() {
 
   // Initiate application
   __app_init_(CPUModel.AQAARMExt, {
-    numType: 'float32',
+    numType: 'int16',
   });
 
   // Prompt user
@@ -148,8 +148,18 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-  const lines = [`MOV r1, #100`, `MOV r2, r1`, `CST r2, #32`, `HALT`];
-  tabCode.properties.assemblyCodeInput.value = lines.join('\n');
+  tabCode.properties.assemblyCodeInput.value = `
+main:
+  MOV r1, #4
+  PSH #0
+  CAL square
+  OUT r1
+  HALT
+
+square:
+  MUL r1, r1, r1
+  RET
+  `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }

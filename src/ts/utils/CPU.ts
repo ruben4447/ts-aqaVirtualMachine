@@ -36,12 +36,12 @@ export function generateCPUInstructionSet(instructionSet: IInstructionSet): ICPU
 
 /** Map number types to their corresponding numbers */
 export const numberTypeMap = createEnum({
-  uint8: 8,
-  int8: 9,
-  int16: 17,
-  uint16: 16,
-  int32: 32,
-  uint32: 33,
-  float32: 30,
-  float64: 64,
+  int8: 1,
+  uint8: 0,
+  int16: 2,
+  uint16: 3,
+  int32: 4,
+  uint32: 5,
+  float32: 6,
+  float64: 7,
 });

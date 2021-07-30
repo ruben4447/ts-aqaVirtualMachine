@@ -99,7 +99,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           if (this.executionConfig.commentary) {
             info.text = `Output register ${this.registerMap[register]}: 0x${this.toHex(value)}`;
           }
-          let output = `[STDOUT: register ${this.registerMap[register]}]\n>> ${value}`;
+          let output = `[STDOUT: register ${this.registerMap[register]}] >> ${value}`;
           console.log(output);
           globalThis.alert(output);
           break;
@@ -111,7 +111,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           if (this.executionConfig.commentary) {
             info.text = `Output register ${this.registerMap[register]} as ASCII: ${chr} (0x${this.toHex(value)})`;
           }
-          let output = `[STDOUT: register ${this.registerMap[register]}]\n>> ${chr}`;
+          let output = `[STDOUT: register ${this.registerMap[register]}] >> ${chr}`;
           console.log(output);
           globalThis.alert(output);
           break;
@@ -129,7 +129,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           if (this.executionConfig.commentary) {
             info.text = `Output memory as null-terminated string from address 0x${this.toHex(address)} - string of length ${string.length}`;
           }
-          let output = `[STDOUT: address 0x${this.registerMap[address]}]\n>> ${string}`;
+          let output = `[STDOUT: address 0x${this.registerMap[address]}] >> ${string}`;
           globalThis.alert(output);
           console.log(output);
           break;
@@ -147,7 +147,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           if (this.executionConfig.commentary) {
             info.text = `Output memory as null-terminated string from address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)}) - string of length ${string.length}`;
           }
-          let output = `[STDOUT: address 0x${this.toHex(address)}]\n>> ${string}`;
+          let output = `[STDOUT: address 0x${this.toHex(address)}] >> ${string}`;
           console.log(output);
           globalThis.alert(output);
           break;
@@ -290,6 +290,81 @@ export class ARMProcessorExtended extends ARMProcessor {
             info.text = `Cast register ${this.registerMap[register]} from type ${this.numType.type} (${numberTypeMap[this.numType.type]}) to ${castType.type} (${constant})\n0x${numberToString(this.numType, registerVal, 16)} => 0x${numberToString(this.numType, number, 16)}`;
           }
           this.writeRegister(register, number);
+          break;
+        }
+        case this.instructionSet.PSH_CONST: {
+          // PSH constant
+          const constant = this.fetch();
+          info.args = [constant];
+          this.push(constant);
+          if (this.executionConfig.commentary) {
+            info.text = `Push constant 0x${this.toHex(constant)} to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+          }
+          break;
+        }
+        case this.instructionSet.PSH_REG: {
+          // PSH register
+          const register = this.fetch(), registerVal = this.readRegister(register);
+          info.args = [registerVal];
+          this.push(registerVal);
+          if (this.executionConfig.commentary) {
+            info.text = `Push register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+          }
+          break;
+        }
+        case this.instructionSet.POP: {
+          // POP register
+          const register = this.fetch();
+          const value = this.pop();
+          info.args = [register];
+          if (this.executionConfig.commentary) {
+            const rSymbol = this.registerMap[register];
+            info.text = `Pop value to register ${rSymbol}\n${rSymbol} = 0x${this.toHex(value)}`;
+          }
+          this.writeRegister(register, value);
+          break;
+        }
+        case this.instructionSet.CAL_CONST: {
+          // CAL constant
+          const constant = this.fetch();
+          info.args = [constant];
+          this.pushFrame();
+          this.writeRegister("ip", constant);
+          if (this.executionConfig.commentary) {
+            info.text = `Call subroutine @ 0x${this.toHex(constant)}\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+          }
+          break;
+        }
+        case this.instructionSet.CAL_REG: {
+          // CAL register
+          const register = this.fetch();
+          const registerVal = this.readRegister(register);
+          info.args = [registerVal];
+          this.pushFrame();
+          this.writeRegister("ip", registerVal);
+          if (this.executionConfig.commentary) {
+            info.text = `Call subroutine @ register ${this.registerMap[register]} (0x${this.toHex(registerVal)})\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+          }
+          break;
+        }
+        case this.instructionSet.RET: {
+          // RET
+          if (this.executionConfig.commentary) {
+            const oldIP = this.readRegister("ip");
+            this.popFrame();
+            const newIP = this.readRegister("ip");
+            info.text = `Return from subroutine\nOld IP = 0x${this.toHex(oldIP)}; New IP = 0x${this.toHex(newIP)}\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+          } else {
+            this.popFrame();
+          }
+          break;
+        }
+        case this.instructionSet.BRK: {
+          // BRK
+          if (this.executionConfig.commentary) {
+            info.text = `<Breakpoint>`;
+          }
+          continueExec = false;
           break;
         }
         default:

@@ -100,7 +100,7 @@ export class MemoryView {
     S.x = startX;
     S.y = this._cache.ySpacing;
     S.setForeground('lightgrey');
-    const ip = this.cpu.readRegister("ip");
+    const ip = this.cpu.readRegister("ip"), sp = this.cpu.readRegister("sp"), fp = this.cpu.readRegister("fp");
     // Address values
     for (let col = 0, addr = this._startAddr; col < this._cols; col++) {
       for (let row = 0; row < this._rows; row++, addr++) {
@@ -116,9 +116,19 @@ export class MemoryView {
             S.setForeground(pointedAtByIPFG);
             S.writeString(text, false);
           });
-        } else if (value == globals.instructionSet.HALT.opcode) {
+        } else if (value === globals.instructionSet.HALT.opcode) {
           withinState(this.screen, S => {
             S.setForeground('tomato');
+            S.writeString(text, false);
+          });
+        } else if (addr === sp) {
+          withinState(this.screen, S => {
+            S.setForeground('magenta');
+            S.writeString(text, false);
+          });
+        } else if (addr === fp) {
+          withinState(this.screen, S => {
+            S.setForeground('violet');
             S.writeString(text, false);
           });
         } else {

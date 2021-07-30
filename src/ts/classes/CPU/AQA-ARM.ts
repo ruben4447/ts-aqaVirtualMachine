@@ -9,7 +9,7 @@ import { IInstructionSet } from "../../types/Assembler";
 export class ARMProcessor extends CPU {
   public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"];
   public static readonly defaultNumType: NumberType = 'float32';
-  public static readonly requiredRegisters: string[] = ["ip", "cmp"];
+  public static readonly requiredRegisters: string[] = ["cmp"];
   public readonly model: CPUModel = CPUModel.AQAARM;
 
   /** Instruction set defaults to AQA arm; present only for overloading purposes */

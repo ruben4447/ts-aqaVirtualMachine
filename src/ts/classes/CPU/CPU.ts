@@ -13,8 +13,9 @@ export class CPUError extends Error {
 export class CPU {
   public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
   public static readonly defaultNumType: NumberType = 'float32';
-  public static readonly requiredRegisters: string[] = ["ip"];
+  public static readonly requiredRegisters: string[] = ["ip", "sp", "fp"];
 
+  protected readonly _generalRegisters: string[];
   public readonly model: CPUModel = undefined; // NO MODEL
   public readonly instructionSet: ICPUInstructionSet;
   protected readonly reversedInstructionSet: IReversedCPUInstructionSet;
@@ -28,19 +29,22 @@ export class CPU {
   public readonly numType: INumberType;
   protected _callbackMemoryWrite: MemoryWriteCallback;
   protected _callbackRegisterWrite: RegisterWriteCallback;
+  protected _stackFrameSize = 0; // Size (in bytes) of latest stack frame
   public executionConfig: ICPUExecutionConfig;
 
 
-  constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = CPU.requiredRegisters) {
+  constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = []) {
     this.instructionSet = generateCPUInstructionSet(instructionSet);
     this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
     this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
 
     this.registerMap = config.registerMap || defaultRegisters;
+    requiredRegisters = Array.from(new Set(CPU.requiredRegisters.concat(requiredRegisters)));
     for (const requiredRegister of requiredRegisters)
       if (this.registerMap.indexOf(requiredRegister) === -1)
         this.registerMap.push(requiredRegister);
+    this._generalRegisters = this.registerMap.filter(r => r[0] === 'r');
 
     this._ip = this.registerMap.indexOf("ip");
     this.__registers = new ArrayBuffer(this.registerMap.length * this.numType.bytes);
@@ -50,6 +54,7 @@ export class CPU {
     this.__memory = new ArrayBuffer(this.memorySize * this.numType.bytes);
     this._memory = new DataView(this.__memory);
 
+    this.resetRegisters();
     this.executionConfig = createCPUExecutionConfigObject();
   }
 
@@ -57,6 +62,13 @@ export class CPU {
   public getMnemonic(opcode: number): string { return this.reversedInstructionSet[opcode]; }
 
   // #region Registers
+  /** Reset reisters to initial values */
+  resetRegisters() {
+    this.writeRegister("ip", 0);
+    this.writeRegister('sp', this.memorySize - 1); // Stack pointer
+    this.writeRegister('fp', this.memorySize - 1); // Frame pointer
+  }
+
   /** Get index of register in register array. Return NaN is does not exist. */
   public getRegisterIndexFromName(name: string): number {
     const index = this.registerMap.indexOf(name);
@@ -177,6 +189,50 @@ export class CPU {
     return numberToString(this.numType, n, 16);
   }
 
+  // Push value to the stack
+  public push(value: number) {
+    let spAddr = this.readRegister("sp");
+    this.writeMemory(spAddr, value);
+    this.writeRegister("sp", spAddr - 1); // Stack grows DOWN
+    this._stackFrameSize += 1;
+  }
+
+  // Pop value from stack
+  public pop(): number {
+    let nextSPAddr = this.readRegister("sp") + 1; // The SP points at the next empty pos; therefore we need to increment the pointer by <bytes> first to get the top value
+    this.writeRegister("sp", nextSPAddr);
+    this._stackFrameSize -= 1;
+    return this.readMemory(nextSPAddr);
+  }
+
+  // Push stack frame
+  public pushFrame() {
+    for (let i = 0; i < this._generalRegisters.length; i++) this.push(this.readRegister(this._generalRegisters[i])); // Store general purpose registers
+    this.push(this.readRegister("ip"));
+    this.push(this._stackFrameSize + 1); // Record stack frame size
+    this.writeRegister("fp", this.readRegister("sp"));
+    this._stackFrameSize = 0;
+  }
+
+  // Pop stack frame
+  public popFrame() {
+    const fpAddr = this.readRegister("fp");
+    this.writeRegister("sp", fpAddr);
+
+    const sfs = this.pop();
+    this._stackFrameSize = sfs;
+
+    // Pop all stored registers
+    this.writeRegister("ip", this.pop());
+    for (let i = this._generalRegisters.length - 1; i >= 0; i--) this.writeRegister(this._generalRegisters[i], this.pop());
+    // Pop subroutine args
+    console.log("BEFORE NARGS");
+    const nArgs = this.pop();
+    console.log("NARGS:", nArgs)
+    for (let i = 0; i < nArgs; i++) this.pop();
+    // Reset frame pointer
+    this.writeRegister("fp", fpAddr + sfs);
+  }
 
   /** Get next word in memory, and increment IP */
   public fetch(): number {

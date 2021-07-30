@@ -150,6 +150,52 @@ export const instructionSet: IInstructionSet = {
     desc: "Cast value in [register] to data type represented by [constant]",
   },
   //#endregion
+
+  //#region Stack
+  PSH_CONST: {
+    mnemonic: "PSH",
+    opcode: 0x30,
+    args: [AssemblerType.Constant],
+    desc: "Push [constant] to stack",
+  },
+  PSH_REG: {
+    mnemonic: "PSH",
+    opcode: 0x31,
+    args: [AssemblerType.Register],
+    desc: "Push register [register] to stack",
+  },
+  POP: {
+    mnemonic: "POP",
+    opcode: 0x32,
+    args: [AssemblerType.Register],
+    desc: "Pop value from stack and store in [register]",
+  },
+  CAL_CONST: {
+    mnemonic: "CAL",
+    opcode: 0x33,
+    args: [AssemblerType.Constant],
+    desc: "Call subroutine at memory address [constant] (NB number of arguments MUST be pushed before CAL)",
+  },
+  CAL_REG: {
+    mnemonic: "CAL",
+    opcode: 0x34,
+    args: [AssemblerType.Register],
+    desc: "Call subroutine at register [register] (NB number of arguments MUST be pushed before CAL)",
+  },
+  RET: {
+    mnemonic: "RET",
+    opcode: 0x35,
+    args: [],
+    desc: "Return from subroutine (used after CAL)",
+  },
+  //#endregion
+
+  BRK: {
+    mnemonic: "BRK",
+    opcode: 0x7E,
+    args: [],
+    desc: "BREAKPOINT",
+  },
 };
 
 export default instructionSet;

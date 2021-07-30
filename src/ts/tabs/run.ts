@@ -128,7 +128,7 @@ function updateExecHistoryTable(entryViewing?: number) {
 
 export function prepareForExecution() {
   // Set IP=0
-  globals.cpu.writeRegister("ip", 0);
+  globals.cpu.resetRegisters();
 
   // Clear feedback screen
   properties.feedbackScreen.clear();
