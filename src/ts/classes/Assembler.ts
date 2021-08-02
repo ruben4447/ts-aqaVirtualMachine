@@ -410,9 +410,10 @@ export class Assembler {
     // Replace command via replaceCommandMap?
     if (string in this.replaceCommandMap) string = this.replaceCommandMap[string].replaceWith;
 
+    const stringL = string.toLowerCase();
     for (let instruction in this._imap) {
       if (this._imap.hasOwnProperty(instruction)) {
-        if (this._imap[instruction].mnemonic === string) return string;
+        if (this._imap[instruction].mnemonic.toLowerCase() === stringL) return string;
       }
     }
     return null;

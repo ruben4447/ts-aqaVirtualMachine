@@ -139,7 +139,7 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.AQAARMExt, {
+  __app_init_(CPUModel.RS, {
     numType: 'int16',
   });
 
@@ -150,15 +150,18 @@ function __app_main_() {
 
   tabCode.properties.assemblyCodeInput.value = `
 main:
-  MOV r1, #4
-  PSH #0
-  CAL square
-  OUT r1
-  HALT
+  psh #5     ; Push 5 as argument
+  psh #1     ; Push number of arguments
+  cal sqrt
+  hlt
 
-square:
-  MUL r1, r1, r1
-  RET
+sqrt:
+  sub acc, #12
+  brk
+  mov acc, *acc
+  brk
+  sqrt
+  ret
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

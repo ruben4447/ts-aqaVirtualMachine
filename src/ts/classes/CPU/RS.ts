@@ -2,11 +2,12 @@ import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
 import { NumberType } from "../../types/general";
 import CPU from "./CPU";
 import { instructionSet } from '../../instruction-set/rs';
+import { CMP, compare } from "../../utils/CPU";
 
 export class RSProcessor extends CPU {
-    public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"];
+    public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
     public static readonly defaultNumType: NumberType = 'float32';
-    public static readonly requiredRegisters: string[] = ["ip", "acc"];
+    public static readonly requiredRegisters: string[] = ["ip", "sp", "fp", "acc", "cmp"];
     public readonly model: CPUModel = CPUModel.RS;
 
     protected readonly _acc: number; // Index of accumulator register
@@ -84,108 +85,103 @@ export class RSProcessor extends CPU {
                 this.writeRegister(register, value);
                 break;
             }
-            case this.instructionSet.ADD_REG: {
-                // ADD register
-                const register = this.fetch(), value = this.readRegister(register);
-                info.args = [register];
-                const acc = this.readRegister(this._acc), result = acc + value;
-                if (comment) info.text = `accumulator = accumulator + ${this.registerMap[register]}\n0x${this.toHex(acc)} + 0x${this.toHex(value)} = 0x${this.toHex(result)}`;
+            case this.instructionSet.ADD_REG_REG: {
+                // ADD register1 register2
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const register2 = this.fetch(), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const result = value1 + value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} + register ${this.registerMap[register2]}\n0x${this.toHex(value1)} + 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.ADD_CONST: {
-                // ADD constant
-                const constant = this.fetch();
-                info.args = [constant];
-                const acc = this.readRegister(this._acc), result = acc + constant;
-                if (comment) {
-                    const hex = this.toHex(constant);
-                    info.text = `accumulator =  accumulator + 0x${hex}\n0x${this.toHex(acc)} + 0x${hex} = 0x${this.toHex(result)}`;
-                }
+            case this.instructionSet.ADD_REG_CONST: {
+                // ADD register constant
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 + value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} + constant\n0x${this.toHex(value1)} + 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.SUB_REG: {
-                // SUB register
-                const register = this.fetch(), value = this.readRegister(register);
-                info.args = [register];
-                const acc = this.readRegister(this._acc), result = acc - value;
-                if (comment) info.text = `accumulator = accumulator - ${this.registerMap[register]}\n0x${this.toHex(acc)} - 0x${this.toHex(value)} = 0x${this.toHex(result)}`;
+            case this.instructionSet.SUB_REG_REG: {
+                // SUB register1 register2
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const register2 = this.fetch(), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const result = value1 - value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} - register ${this.registerMap[register2]}\n0x${this.toHex(value1)} - 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.SUB_CONST: {
-                // SUB constant
-                const constant = this.fetch();
-                info.args = [constant];
-                const acc = this.readRegister(this._acc), result = acc - constant;
-                if (comment) {
-                    const hex = this.toHex(constant);
-                    info.text = `accumulator = accumulator - 0x${hex}\n0x${this.toHex(acc)} - 0x${hex} = 0x${this.toHex(result)}`;
-                }
+            case this.instructionSet.SUB_REG_CONST: {
+                // SUB register constant
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 - value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} - constant\n0x${this.toHex(value1)} - 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.MUL_REG: {
-                // MUL register
-                const register = this.fetch(), value = this.readRegister(register);
-                info.args = [register];
-                const acc = this.readRegister(this._acc), result = acc * value;
-                if (comment) info.text = `accumulator = accumulator * ${this.registerMap[register]}\n0x${this.toHex(acc)} * 0x${this.toHex(value)} = 0x${this.toHex(result)}`;
+            case this.instructionSet.MUL_REG_REG: {
+                // MUL register1 register2
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const register2 = this.fetch(), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const result = value1 * value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} * register ${this.registerMap[register2]}\n0x${this.toHex(value1)} * 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.MUL_CONST: {
-                // MUL constant
-                const constant = this.fetch();
-                info.args = [constant];
-                const acc = this.readRegister(this._acc), result = acc * constant;
-                if (comment) {
-                    const hex = this.toHex(constant);
-                    info.text = `accumulator = accumulator * 0x${hex}\n0x${this.toHex(acc)} * 0x${hex} = 0x${this.toHex(result)}`;
-                }
+            case this.instructionSet.MUL_REG_CONST: {
+                // MUL register constant
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 * value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} * constant\n0x${this.toHex(value1)} * 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.DIV_REG: {
-                // DIV register
-                const register = this.fetch(), value = this.readRegister(register);
-                info.args = [register];
-                const acc = this.readRegister(this._acc), result = acc / value;
-                if (comment) info.text = `accumulator = accumulator / ${this.registerMap[register]}\n0x${this.toHex(acc)} / 0x${this.toHex(value)} = 0x${this.toHex(result)}`;
+            case this.instructionSet.DIV_REG_REG: {
+                // DIV register1 register2
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const register2 = this.fetch(), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const result = value1 / value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} / register ${this.registerMap[register2]}\n0x${this.toHex(value1)} / 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.DIV_CONST: {
-                // DIV constant
-                const constant = this.fetch();
-                info.args = [constant];
-                const acc = this.readRegister(this._acc), result = acc / constant;
-                if (comment) {
-                    const hex = this.toHex(constant);
-                    info.text = `accumulator = accumulator / 0x${hex}\n0x${this.toHex(acc)} / 0x${hex} = 0x${this.toHex(result)}`;
-                }
+            case this.instructionSet.DIV_REG_CONST: {
+                // DIV register constant
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 / value2;
+                if (comment) info.text = `Register ${this.registerMap[register1]} / constant\n0x${this.toHex(value1)} / 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.EXP_REG: {
-                // EXP register
-                const register = this.fetch(), value = this.readRegister(register);
-                info.args = [register];
-                const acc = this.readRegister(this._acc), result = Math.pow(acc, value);
-                if (comment) info.text = `accumulator = accumulator ** ${this.registerMap[register]}\n0x${this.toHex(acc)} ** 0x${this.toHex(value)} = 0x${this.toHex(result)}`;
+            case this.instructionSet.IDIV_REG_REG: {
+                // IDIV register1 register2
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const register2 = this.fetch(), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const result = Math.floor(value1 / value2);
+                if (comment) info.text = `int(register ${this.registerMap[register1]} / register ${this.registerMap[register2]})\nint(0x${this.toHex(value1)} / 0x${this.toHex(value2)}) = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
-            case this.instructionSet.EXP_CONST: {
-                // EXP constant
-                const constant = this.fetch();
-                info.args = [constant];
-                const acc = this.readRegister(this._acc), result = Math.pow(acc, constant);
-                if (comment) {
-                    const hex = this.toHex(constant);
-                    info.text = `accumulator = accumulator ** 0x${hex}\n0x${this.toHex(acc)} ** 0x${hex} = 0x${this.toHex(result)}`;
-                }
+            case this.instructionSet.IDIV_REG_CONST: {
+                // IDIV register constant
+                const register1 = this.fetch(), value1 = this.readRegister(register1);
+                const value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = Math.floor(value1 / value2);
+                if (comment) info.text = `int(register ${this.registerMap[register1]} / constant)\nint(0x${this.toHex(value1)} / 0x${this.toHex(value2)}) = 0x${this.toHex(result)}`;
                 this.writeRegister(this._acc, result);
                 break;
             }
@@ -214,6 +210,354 @@ export class RSProcessor extends CPU {
                     info.text = `${name} = ${name} - 1\n0x${this.toHex(value)} - 0x${this.toHex(1)} = 0x${this.toHex(result)}`;
                 }
                 this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.AND_REG_REG: {
+                // AND register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                const result = value1 & value2;
+                if (comment) {
+                    info.text = `Register ${this.registerMap[register1]} & register ${this.registerMap[register2]}\n0x${this.toHex(value1)} & 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.AND_REG_CONST: {
+                // AND register constant
+                const register = this.fetch(), constant = this.fetch();
+                info.args = [register, constant];
+                const regValue = this.readRegister(register);
+                const result = regValue & constant;
+                if (comment) {
+                    let cHex = this.toHex(constant);
+                    info.text = `Register ${this.registerMap[register]} & 0x${cHex}\n0x${this.toHex(regValue)} & 0x${cHex} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.OR_REG_REG: {
+                // OR register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                const result = value1 | value2;
+                if (comment) {
+                    info.text = `Register ${this.registerMap[register1]} | register ${this.registerMap[register2]}\n0x${this.toHex(value1)} | 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.OR_REG_CONST: {
+                // OR register constant
+                const register = this.fetch(), constant = this.fetch();
+                info.args = [register, constant];
+                const regValue = this.readRegister(register);
+                const result = regValue | constant;
+                if (comment) {
+                    let cHex = this.toHex(constant);
+                    info.text = `Register ${this.registerMap[register]} | 0x${cHex}\n0x${this.toHex(regValue)} | 0x${cHex} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.XOR_REG_REG: {
+                // XOR register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                const result = value1 ^ value2;
+                if (comment) {
+                    info.text = `Register ${this.registerMap[register1]} ^ register ${this.registerMap[register2]}\n0x${this.toHex(value1)} ^ 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.XOR_REG_CONST: {
+                // XOR register constant
+                const register = this.fetch(), constant = this.fetch();
+                info.args = [register, constant];
+                const regValue = this.readRegister(register);
+                const result = regValue ^ constant;
+                if (comment) {
+                    let cHex = this.toHex(constant);
+                    info.text = `Register ${this.registerMap[register]} ^ 0x${cHex}\n0x${this.toHex(regValue)} ^ 0x${cHex} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.NOT: {
+                // NOT register
+                const register = this.fetch();
+                info.args = [register];
+                const regValue = this.readRegister(register);
+                const result = ~regValue;
+                if (comment) {
+                    info.text = `NOT register ${this.registerMap[register]}\n~0x${this.toHex(regValue)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(this._acc, result);
+                break;
+            }
+            case this.instructionSet.LSF_REG_REG: {
+                // LSF register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                const result = value1 << value2;
+                if (comment) {
+                    info.text = `Left shift register ${this.registerMap[register1]} by register ${this.registerMap[register2]}\n0x${this.toHex(value1)} << 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(register1, result);
+                break;
+            }
+            case this.instructionSet.LSF_REG_CONST: {
+                // LSF register1 constant
+                const register1 = this.fetch();
+                const value1 = this.readRegister(register1), value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 << value2;
+                if (comment) {
+                    let v2hex = this.toHex(value2);
+                    info.text = `Left shift register ${this.registerMap[register1]} by 0x${v2hex}\n0x${this.toHex(value1)} << 0x${v2hex} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(register1, result);
+                break;
+            }
+            case this.instructionSet.LSF_REG_REG: {
+                // RSF register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                const result = value1 >> value2;
+                if (comment) {
+                    info.text = `Right shift register ${this.registerMap[register1]} by register ${this.registerMap[register2]}\n0x${this.toHex(value1)} >> 0x${this.toHex(value2)} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(register1, result);
+                break;
+            }
+            case this.instructionSet.RSF_REG_CONST: {
+                // RSF register1 constant
+                const register1 = this.fetch();
+                const value1 = this.readRegister(register1), value2 = this.fetch();
+                info.args = [register1, value2];
+                const result = value1 >> value2;
+                if (comment) {
+                    let v2hex = this.toHex(value2);
+                    info.text = `Right shift register ${this.registerMap[register1]} by 0x${v2hex}\n0x${this.toHex(value1)} >> 0x${v2hex} = 0x${this.toHex(result)}`;
+                }
+                this.writeRegister(register1, result);
+                break;
+            }
+            case this.instructionSet.CMP_REG_REG: {
+                // CMP register1 register2
+                const register1 = this.fetch(), register2 = this.fetch();
+                info.args = [register1, register2];
+                const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
+                info.args = [register1, register2];
+                const comparison = compare(value1, value2);
+                if (this.executionConfig.commentary) {
+                    info.text = `Compare register ${this.registerMap[register1]} and register ${this.registerMap[register2]}\ncompare(0x${this.toHex(value1)}, 0x${this.toHex(value2)}) => ${comparison} (${CMP[comparison]})`;
+                }
+                this.writeRegister('cmp', comparison);
+                break;
+            }
+            case this.instructionSet.CMP_REG_CONST: {
+                // CMP register1 constant
+                const register = this.fetch();
+                const value1 = this.readRegister(register), value2 = this.fetch();
+                info.args = [register, value2];
+                const comparison = compare(value1, value2);
+                if (this.executionConfig.commentary) {
+                    const v2hex = this.toHex(value2);
+                    info.text = `Compare register ${this.registerMap[register]} and 0x${v2hex}\ncompare(0x${this.toHex(value1)}, 0x${v2hex}) => ${comparison} (${CMP[comparison]})`;
+                }
+                this.writeRegister('cmp', comparison);
+                break;
+            }
+            case this.instructionSet.JMP_CONST: {
+                // JMP constant
+                const constant = this.fetch();
+                info.args = [constant];
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to 0x${this.toHex(constant)}`;
+                }
+                this.writeRegister(this._ip, constant);
+                break;
+            }
+            case this.instructionSet.JMP_REG: {
+                // JMP register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [register];
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)})`;
+                }
+                this.writeRegister(this._ip, registerVal);
+                break;
+            }
+            case this.instructionSet.JEQ_CONST: {
+                // JEQ constant
+                const constant = this.fetch();
+                info.args = [constant];
+                const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'equal to' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, constant);
+                break;
+            }
+            case this.instructionSet.JEG_REG: {
+                // JEQ register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [register];
+                const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'equal to' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, registerVal);
+                break;
+            }
+            case this.instructionSet.JNE_CONST: {
+                // JNE constant
+                const constant = this.fetch();
+                info.args = [constant];
+                const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'not equal to' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, constant);
+                break;
+            }
+            case this.instructionSet.JNE_REG: {
+                // JNE register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [register];
+                const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'not equal to' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, registerVal);
+                break;
+            }
+            case this.instructionSet.JLT_CONST: {
+                // JLT constant
+                const constant = this.fetch();
+                info.args = [constant];
+                const condition = this.readRegister("cmp") === CMP.LESS_THAN;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'less than' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, constant);
+                break;
+            }
+            case this.instructionSet.JLT_REG: {
+                // JLT register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [register];
+                const condition = this.readRegister("cmp") === CMP.LESS_THAN;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'less than' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, registerVal);
+                break;
+            }
+            case this.instructionSet.JGT_CONST: {
+                // JGT constant
+                const constant = this.fetch();
+                info.args = [constant];
+                const condition = this.readRegister("cmp") === CMP.GREATER_THAN;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'greater than' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, constant);
+                break;
+            }
+            case this.instructionSet.JGT_REG: {
+                // JGT register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [register];
+                const condition = this.readRegister("cmp") === CMP.GREATER_THAN;
+                if (this.executionConfig.commentary) {
+                    info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'greater than' --> ${condition.toString().toUpperCase()}`;
+                }
+                if (condition) this.writeRegister(this._ip, registerVal);
+                break;
+            }
+            case this.instructionSet.PSH_CONST: {
+                // PSH constant
+                const constant = this.fetch();
+                info.args = [constant];
+                this.push(constant);
+                if (this.executionConfig.commentary) {
+                    info.text = `Push constant 0x${this.toHex(constant)} to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+                }
+                break;
+            }
+            case this.instructionSet.PSH_REG: {
+                // PSH register
+                const register = this.fetch(), registerVal = this.readRegister(register);
+                info.args = [registerVal];
+                this.push(registerVal);
+                if (this.executionConfig.commentary) {
+                    info.text = `Push register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+                }
+                break;
+            }
+            case this.instructionSet.POP: {
+                // POP register
+                const register = this.fetch();
+                const value = this.pop();
+                info.args = [register];
+                if (this.executionConfig.commentary) {
+                    const rSymbol = this.registerMap[register];
+                    info.text = `Pop value to register ${rSymbol}\n${rSymbol} = 0x${this.toHex(value)}`;
+                }
+                this.writeRegister(register, value);
+                break;
+            }
+            case this.instructionSet.CAL_CONST: {
+                // CAL constant
+                const constant = this.fetch();
+                info.args = [constant];
+                this.pushFrame();
+                this.writeRegister("ip", constant);
+                if (this.executionConfig.commentary) {
+                    info.text = `Call subroutine @ 0x${this.toHex(constant)}\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+                }
+                break;
+            }
+            case this.instructionSet.CAL_REG: {
+                // CAL register
+                const register = this.fetch();
+                const registerVal = this.readRegister(register);
+                info.args = [registerVal];
+                this.pushFrame();
+                this.writeRegister("ip", registerVal);
+                if (this.executionConfig.commentary) {
+                    info.text = `Call subroutine @ register ${this.registerMap[register]} (0x${this.toHex(registerVal)})\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+                }
+                break;
+            }
+            case this.instructionSet.RET: {
+                // RET
+                if (this.executionConfig.commentary) {
+                    const oldIP = this.readRegister("ip");
+                    this.popFrame();
+                    const newIP = this.readRegister("ip");
+                    info.text = `Return from subroutine\nOld IP = 0x${this.toHex(oldIP)}; New IP = 0x${this.toHex(newIP)}\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+                } else {
+                    this.popFrame();
+                }
+                break;
+            }
+
+            case this.instructionSet.BRK: {
+                // BRK
+                if (this.executionConfig.commentary) {
+                    info.text = `<Breakpoint> Pause Execution\nIP = 0x${this.toHex(this.readRegister('ip'))}`;
+                }
+                continueExec = false;
+                debugger;
                 break;
             }
             default:
