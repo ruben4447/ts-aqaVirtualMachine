@@ -297,14 +297,14 @@ export const instructionSet: IInstructionSet = {
     //#endregion
 
     //#region Stack
-    PSH_CONST: {
-        mnemonic: "PSH",
+    PUSH_CONST: {
+        mnemonic: "PUSH",
         opcode: 0x60,
         args: [AssemblerType.Constant],
         desc: "Push [constant] to stack",
     },
-    PSH_REG: {
-        mnemonic: "PSH",
+    PUSH_REG: {
+        mnemonic: "PUSH",
         opcode: 0x61,
         args: [AssemblerType.Register],
         desc: "Push register [register] to stack",
@@ -315,14 +315,14 @@ export const instructionSet: IInstructionSet = {
         args: [AssemblerType.Register],
         desc: "Pop value from stack and store in [register]",
     },
-    CAL_CONST: {
-        mnemonic: "CAL",
+    CALL_CONST: {
+        mnemonic: "CALL",
         opcode: 0x63,
         args: [AssemblerType.Constant],
         desc: "Call subroutine at memory address [constant] (NB number of arguments MUST be pushed before CAL)",
     },
-    CAL_REG: {
-        mnemonic: "CAL",
+    CALL_REG: {
+        mnemonic: "CALL",
         opcode: 0x64,
         args: [AssemblerType.Register],
         desc: "Call subroutine at register [register] (NB number of arguments MUST be pushed before CAL)",

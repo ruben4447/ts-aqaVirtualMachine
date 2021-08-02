@@ -483,8 +483,8 @@ export class RSProcessor extends CPU {
                 if (condition) this.writeRegister(this._ip, registerVal);
                 break;
             }
-            case this.instructionSet.PSH_CONST: {
-                // PSH constant
+            case this.instructionSet.PUSH_CONST: {
+                // PUSH constant
                 const constant = this.fetch();
                 info.args = [constant];
                 this.push(constant);
@@ -493,8 +493,8 @@ export class RSProcessor extends CPU {
                 }
                 break;
             }
-            case this.instructionSet.PSH_REG: {
-                // PSH register
+            case this.instructionSet.PUSH_REG: {
+                // PUSH register
                 const register = this.fetch(), registerVal = this.readRegister(register);
                 info.args = [registerVal];
                 this.push(registerVal);
@@ -515,8 +515,8 @@ export class RSProcessor extends CPU {
                 this.writeRegister(register, value);
                 break;
             }
-            case this.instructionSet.CAL_CONST: {
-                // CAL constant
+            case this.instructionSet.CALL_CONST: {
+                // CALL constant
                 const constant = this.fetch();
                 info.args = [constant];
                 this.pushFrame();
@@ -526,8 +526,8 @@ export class RSProcessor extends CPU {
                 }
                 break;
             }
-            case this.instructionSet.CAL_REG: {
-                // CAL register
+            case this.instructionSet.CALL_REG: {
+                // CALL register
                 const register = this.fetch();
                 const registerVal = this.readRegister(register);
                 info.args = [registerVal];

@@ -152,15 +152,13 @@ function __app_main_() {
 main:
   psh #5     ; Push 5 as argument
   psh #1     ; Push number of arguments
-  cal sqrt
+  cal square
   hlt
 
-sqrt:
-  sub acc, #12
-  brk
+square:
+  add sp, #12     ; Adjust to location of argument
   mov acc, *acc
-  brk
-  sqrt
+  mul acc, acc
   ret
   `.trim();
   tabCode.compileAssembly();

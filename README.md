@@ -30,3 +30,13 @@ Writing to either memory or registers will trigger a respective callback. This c
 ## Assembler
 This takes AQA assembly code as an input and produces an ArrayBuffer of output bytes (this output depends on the CPUs numeric typing, stores in `#<CPU>.numType`)
 Upon error, an `AssemblerError` will be thrown at the various stage, and be caught and rethrown up until the called method. The error is designed to provide maximum insight into what caused it, and as such is quite verbose (perhaps unecessarily in some cases).
+
+## Calling Convention
+All CPUs (unless states) share common stack frame structures and calling conventions.
+
+A new stack frame is created on a call to `cal` and has the following structure:
+- `size of stack frame`
+- `return address` - address where IP is set to upon `ret`
+- `...general purpose registers` - general purpose registers are preserved on the stack, and are any regieter prefixes by an `r` e.g. `r1`, `r5`
+- `argc` - argument count to subroutine. [**PUSHED BY USER**]
+- `...argv` - sequence of `argc` values acting as arguments. [**PUSHED BY USER**]
