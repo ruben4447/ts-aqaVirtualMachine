@@ -1,6 +1,6 @@
 import { IInstructionSet } from "../types/Assembler";
 import { ICPUInstructionSet } from "../types/CPU";
-import { createEnum, hex } from "./general";
+import { createEnum, getNumTypeInfo, hex } from "./general";
 
 /** Comparison results. Note, no negative numbers to support unsigned data types. */
 export enum CMP {
@@ -45,3 +45,10 @@ export const numberTypeMap = createEnum({
   float32: 6,
   float64: 7,
 });
+
+export const numberTypeToObject = {};
+for (let key in numberTypeMap) {
+  if (numberTypeMap.hasOwnProperty(key) && isNaN(+key)) {
+    numberTypeToObject[key] = getNumTypeInfo(key as any);
+  }
+}

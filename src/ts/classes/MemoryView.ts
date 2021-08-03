@@ -1,20 +1,22 @@
 import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
-import { numberToString } from "../utils/general";
+import { getNumTypeInfo, numberToString } from "../utils/general";
 import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
 import globals from "../globals";
+import { INumberType, NumberType } from "../types/general";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 
 export class MemoryView {
   public readonly screen: CustomScreen;
   public readonly cpu: CPU;
-  private _rows: number = 7;
+  private _rows: number = 25;
   private _cols: number = 30;
   private _startAddr: number = 0;
   private _base: number = 16; // What base do we show our numbers in?
   private _cache: IMemoryViewCache; // Cache measurements and stuff
+  private _type: INumberType; // Display data type
 
   public constructor(wrapper: HTMLDivElement, cpu: CPU) {
     this.screen = new CustomScreen(wrapper);
@@ -23,6 +25,7 @@ export class MemoryView {
       font.size = 11;
     });
     this.cpu = cpu;
+    this._type = getNumTypeInfo(cpu.displayDT);
 
     this._updateCache();
     this._render();
@@ -30,6 +33,9 @@ export class MemoryView {
 
   public get startAddress(): number { return this._startAddr; }
   public set startAddress(addr: number) { this._startAddr = addr; this._updateCache(); this._render(); }
+
+  public get type(): INumberType { return this._type; }
+  public set type(type: INumberType) { this._type = type; this._updateCache(); this._render(); }
 
   public get rows(): number { return this._rows; }
   public set rows(value: number) { this._rows = value; this._updateCache(); this._render(); }
@@ -100,35 +106,21 @@ export class MemoryView {
     S.x = startX;
     S.y = this._cache.ySpacing;
     S.setForeground('lightgrey');
-    const ip = this.cpu.readRegister("ip"), sp = this.cpu.readRegister("sp"), fp = this.cpu.readRegister("fp");
+    const ip = this.cpu.readRegister("ip");
     // Address values
     for (let col = 0, addr = this._startAddr; col < this._cols; col++) {
-      for (let row = 0; row < this._rows; row++, addr++) {
+      for (let row = 0; row < this._rows; row++, addr += this._type.bytes) {
         let text: string, value: number;
         try {
-          value = this.cpu.readMemory(addr);
-          text = numberToString(this.cpu.numType, value, this._base)
-        } catch {
+          value = this.cpu.readMemory(addr, this._type);
+          text = numberToString(this._type, value, this._base)
+        } catch (e) {
+          console.error(e);
           text = '-';
         }
         if (addr === ip) {
           withinState(this.screen, S => {
             S.setForeground(pointedAtByIPFG);
-            S.writeString(text, false);
-          });
-        } else if (value === globals.instructionSet.HALT.opcode) {
-          withinState(this.screen, S => {
-            S.setForeground('tomato');
-            S.writeString(text, false);
-          });
-        } else if (addr === sp) {
-          withinState(this.screen, S => {
-            S.setForeground('magenta');
-            S.writeString(text, false);
-          });
-        } else if (addr === fp) {
-          withinState(this.screen, S => {
-            S.setForeground('violet');
             S.writeString(text, false);
           });
         } else {
@@ -151,7 +143,7 @@ export class MemoryView {
     this.screen.y = y;
 
     const value = this.cpu.readMemory(address);
-    let text = numberToString(this.cpu.numType, value, this._base);
+    let text = numberToString(this._type, value, this._base);
     if (address === this.cpu.readRegister("ip")) {
       withinState(this.screen, S => {
         S.setForeground(pointedAtByIPFG);

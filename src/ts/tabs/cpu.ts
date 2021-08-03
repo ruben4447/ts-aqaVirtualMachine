@@ -75,7 +75,7 @@ function generateHTML(): HTMLDivElement {
   table.appendChild(tbody);
   let tr = document.createElement('tr');
   tbody.appendChild(tr);
-  tr.insertAdjacentHTML('beforeend', '<th>Data Type</th>');
+  tr.insertAdjacentHTML('beforeend', '<th title=\'Default data type of processor\'>Data Type</th>');
   let td = document.createElement('td');
   tr.appendChild(td);
   const selectDataType = document.createElement('select');
@@ -109,7 +109,7 @@ function generateHTML(): HTMLDivElement {
 
   tr = document.createElement('tr');
   tbody.appendChild(tr);
-  tr.insertAdjacentHTML('beforeend', '<th>Capacity (words)</th>');
+  tr.insertAdjacentHTML('beforeend', '<th>Bytes</th>');
   td = document.createElement('td');
   tr.appendChild(td);
   const inputMemorySize = document.createElement('input');
@@ -126,13 +126,6 @@ function generateHTML(): HTMLDivElement {
   });
   td.appendChild(inputMemorySize);
   td.insertAdjacentHTML('beforeend', ` &nbsp; <code>(${numberToString(globals.cpu.numType, globals.cpu.memorySize, globals.base)})<sub>${globals.base}</sub></code>`);
-
-  const memoryBytes = globals.cpu.memorySizeBytes();
-  tbody.insertAdjacentHTML('beforeend', `<tr><th>Capacity (bytes)</th><td><code>${seperateNumber(memoryBytes)} (${numberToString(globals.cpu.numType, memoryBytes, globals.base)})<sub>${globals.base}</sub></code></td></tr>`);
-
-  let usablePercent = (maxVal / globals.cpu.memorySize) * 100;
-  if (usablePercent >= 100) usablePercent = 100;
-  tbody.insertAdjacentHTML('beforeend', `<tr><th>Addressable Memory</th><td><code>${seperateNumber(maxVal)} addresses (${usablePercent.toFixed(2)}%)</code></td></tr>`);
 
   // Registers
   div = document.createElement("div");

@@ -15,6 +15,7 @@ export class RSProcessor extends CPU {
     public constructor(config: ICPUConfiguration) {
         super(instructionSet, config, RSProcessor.defaultRegisters, RSProcessor.defaultNumType, RSProcessor.requiredRegisters);
         this._acc = this.registerMap.indexOf('acc');
+        this.displayBytes = true;
     }
 
     /** @override */

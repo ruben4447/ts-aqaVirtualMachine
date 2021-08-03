@@ -2,6 +2,7 @@ import MemoryView from "../classes/MemoryView";
 import RegisterView from "../classes/RegisterView";
 import globals from "../globals";
 import { IMemoryTabProperties, ITabInfo } from "../types/Tabs";
+import { numberTypeMap, numberTypeToObject } from "../utils/CPU";
 import { hex } from "../utils/general";
 
 export const info: ITabInfo = {
@@ -43,7 +44,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
       inputtedAddress(0);
     } else {
       addressViewing = addr;
-      const decimal = globals.cpu.readMemory(addr);
+      const decimal = globals.cpu.readMemory(addr, view.type);
       inputAddressValue.value = decimal.toString();
     }
   };
@@ -67,11 +68,23 @@ function generateMemoryViewHTML(): HTMLDivElement {
     // Write to address
     const decimal = +inputAddressValue.value;
     if (!isNaN(decimal) && isFinite(decimal)) {
-      globals.cpu.writeMemory(addressViewing, decimal);
+      globals.cpu.writeMemory(addressViewing, decimal, view.type);
     }
     inputtedAddress(inputAddress.value); // Reset
   });
   p.appendChild(inputAddressValue);
+  let selectNType = document.createElement("select");
+  for (let key in numberTypeMap) {
+    if (numberTypeMap.hasOwnProperty(key) && !isNaN(+key)) {
+      let selected = numberTypeMap[key] === view.type.type;
+      selectNType.insertAdjacentHTML('beforeend', `<option value='${key}'${selected?' selected="selected"':''}>${numberTypeMap[key]}</option>`);
+    }
+  }
+  selectNType.addEventListener("change", () => {
+    let tname = numberTypeMap[+selectNType.value];
+    view.type = numberTypeToObject[tname];
+  });
+  p.appendChild(selectNType);
   inputtedAddress(0);
 
   /// Buttons
@@ -151,14 +164,14 @@ function generateMemoryViewHTML(): HTMLDivElement {
   btnSetInRange.addEventListener('click', () => {
     const [min, max] = view.getAddressRange();
     const number = +inputSetValue.value;
-    globals.cpu.writeMemoryBulk(min, max, number);
+    globals.cpu.writeMemoryBulk(min, max, number, view.type);
   });
   p.appendChild(btnSetInRange);
   let btnSetAll = document.createElement("button");
   btnSetAll.innerText = 'Set All';
   btnSetAll.addEventListener('click', () => {
     const number = +inputSetValue.value;
-    globals.cpu.writeMemoryBulk(0, globals.cpu.memorySize, number);
+    globals.cpu.writeMemoryBulk(0, globals.cpu.memorySize, number, view.type);
   });
   p.appendChild(btnSetAll);
   p.insertAdjacentHTML('beforeend', ' &nbsp;to ');
@@ -214,7 +227,6 @@ function generateMemoryViewHTML(): HTMLDivElement {
       inputCols.value = view.cols.toString();
     }
   });
-
 
   updateGUI();
 
@@ -305,8 +317,14 @@ export function init() {
   globals.cpu.onMemoryWrite((startAddress, endAddress) => {
     if (startAddress === endAddress) {
       properties.memoryView.update(startAddress);
+    } else if (endAddress > startAddress) {
+      for (let a = startAddress; a <= endAddress; a++) {
+        properties.memoryView.update(a);
+      }
     } else {
-      properties.memoryView.update();
+      for (let a = startAddress; a >= endAddress; a--) {
+        properties.memoryView.update(a);
+      }
     }
   });
   globals.cpu.onRegisterWrite((index, value, cpu) => {

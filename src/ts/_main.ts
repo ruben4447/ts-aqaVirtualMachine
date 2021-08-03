@@ -139,7 +139,7 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.RS, {
+  __app_init_(CPUModel.AQAARM, {
     numType: 'int16',
   });
 
@@ -148,18 +148,24 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-  tabCode.properties.assemblyCodeInput.value = `
-main:
-  psh #5     ; Push 5 as argument
-  psh #1     ; Push number of arguments
-  cal square
-  hlt
+//   tabCode.properties.assemblyCodeInput.value = `
+// main:
+//   push #5     ; Push 5 as argument
+//   push #1     ; Push number of arguments
+//   call square
+//   hlt
 
-square:
-  add sp, #12     ; Adjust to location of argument
-  mov acc, *acc
-  mul acc, acc
-  ret
+// square:
+//   add sp, #12     ; Adjust to location of argument
+//   mov acc, *acc
+//   mul acc, acc
+//   ret
+//   `.trim();
+  tabCode.properties.assemblyCodeInput.value = `
+mov r1, #13
+mov r2, #5
+add r3, r1, r2
+halt
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

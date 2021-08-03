@@ -31,6 +31,7 @@ export class CPU {
   protected _callbackRegisterWrite: RegisterWriteCallback;
   protected _stackFrameSize = 0; // Size (in bytes) of latest stack frame
   public executionConfig: ICPUExecutionConfig;
+  public displayDT: NumberType; // MemoryView
 
 
   constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = []) {
@@ -38,6 +39,7 @@ export class CPU {
     this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
     this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
+    this.displayDT = "int8"; // this.numType.type;
 
     this.registerMap = config.registerMap || defaultRegisters;
     requiredRegisters = Array.from(new Set(CPU.requiredRegisters.concat(requiredRegisters)));
@@ -75,19 +77,20 @@ export class CPU {
     return index == -1 ? NaN : index;
   }
 
-  /** Read value of register at said index */
+  /** Read value of register at said index. Register index is always multiplied by this.numType. */
   public readRegister(register: number | string, numType?: INumberType): number {
     numType = numType ?? this.numType;
     let index = typeof register === 'string' ? this.registerMap.indexOf(register) : Math.floor(register);
     if (isNaN(index) || index === -1) throw new Error(`readRegister: invalid argument provided '${register}'`);
     return this._registers[numType.getMethod](index * this.numType.bytes);
   }
-
+  
   /** Write value to register at said index */
-  public writeRegister(register: number | string, value: number): void {
+  public writeRegister(register: number | string, value: number, numType?: INumberType): void {
+    numType = numType ?? this.numType;
     let index = typeof register === 'string' ? this.registerMap.indexOf(register) : Math.floor(register);
     if (isNaN(index) || index === -1) throw new Error(`writeRegister: invalid argument provided '${register}'`);
-    this._registers[this.numType.setMethod](index * this.numType.bytes, value);
+    this._registers[numType.setMethod](index * this.numType.bytes, value);
     if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(index, value, this);
   }
 
@@ -100,62 +103,67 @@ export class CPU {
   /** Is this a valid memory address? */
   public isValidAddress(address: number): boolean { return address >= 0 && address < this.memorySize; }
 
-  /** Read from memory */
-  public readMemory(address: number): number {
+  /** Read from memory. Address is in BYTE chunks. */
+  public readMemory(address: number, numType?: INumberType): number {
+    if (numType === undefined) numType = this.numType;
     // As the offset is in bytes, we need to jump a whole <bytes> bytes to jump over the data pieces
     try {
-      return this._memory[this.numType.getMethod](address * this.numType.bytes);
+      return this._memory[numType.getMethod](address);
     } catch (e) {
       throw new Error(`readMemory: unable to read from address 0x${address.toString(16)}:\n${e}`);
     }
   }
 
   /** Read from region of memory */
-  public readMemoryRegion(startAddress: number, words: number): ArrayBuffer {
-    const buffer = new ArrayBuffer(words * this.numType.bytes), view = new DataView(buffer);
+  public readMemoryRegion(startAddress: number, words: number, numType?: INumberType): ArrayBuffer {
+    numType = numType ?? this.numType;
+    const buffer = new ArrayBuffer(words * numType.bytes), view = new DataView(buffer);
     for (let offset = 0; offset < words; offset++) {
-      const actualOffset = offset * this.numType.bytes;
-      let value = this._memory[this.numType.getMethod](startAddress + actualOffset);
-      view[this.numType.setMethod](actualOffset, value);
+      const actualOffset = offset * numType.bytes;
+      let value = this._memory[numType.getMethod](startAddress + actualOffset);
+      view[numType.setMethod](actualOffset, value);
     }
     return buffer;
   }
 
-  /** Write value to memory */
-  public writeMemory(address: number, value: number): void {
+  /** Write value to memory. Address is in BYTES. */
+  public writeMemory(address: number, value: number, numType?: INumberType): void {
+    numType = numType ?? this.numType;
     try {
-      this._memory[this.numType.setMethod](address * this.numType.bytes, value);
+      this._memory[numType.setMethod](address, value);
     } catch (e) {
       throw new Error(`writeMemory: unable to write to address 0x${address.toString(16)} (value: 0x${value.toString(16)}):\n${e}`);
     }
-    if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address, this);
+    if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address + numType.bytes, this);
   }
 
   /** Write bytes to a single memory address. Return number this represents. */
-  public writeMemoryBytes(address: number, bytes: ArrayBuffer): number {
+  public writeMemoryBytes(address: number, bytes: ArrayBuffer, numType?: INumberType): number {
+    numType = numType ?? this.numType;
     try {
-      if (bytes.byteLength !== this.numType.bytes) throw new RangeError(`writeMemoryBytes: CPU type is ${this.numType.type} which requires ${this.numType.bytes} bytes; got ${bytes.byteLength} bytes`);
+      if (bytes.byteLength !== numType.bytes) throw new RangeError(`writeMemoryBytes: Date type is ${numType.type} which requires ${numType.bytes} bytes; got ${bytes.byteLength} bytes`);
       const view = new DataView(bytes);
-      let actualAddress = address * this.numType.bytes;
+      let actualAddress = address * numType.bytes;
       for (let i = 0; i < view.byteLength; i++) {
         this._memory.setUint8(actualAddress + i, view.getUint8(i));
       }
-      if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address, this);
-      return this._memory[this.numType.getMethod](actualAddress);
+      if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address + numType.bytes, this);
+      return this._memory[numType.getMethod](actualAddress);
     } catch (e) {
       throw new Error(`writeMemoryBytes: unable to write ${bytes.byteLength} bytes to address 0x${address.toString(16)}:\n${e}`);
     }
   }
 
   /** Write ArrayBuffer of any length into memory, starting at said address. */
-  public loadMemoryBytes(startAddress: number, bytes: ArrayBuffer): number {
+  public loadMemoryBytes(startAddress: number, bytes: ArrayBuffer, numType?: INumberType): number {
+    numType = numType ?? this.numType;
     try {
-      startAddress *= this.numType.bytes;
+      startAddress *= numType.bytes;
       const view = new DataView(bytes);
       for (let i = 0; i < view.byteLength; i++) {
         this._memory.setUint8(startAddress + i, view.getUint8(i));
       }
-      let endAddress = startAddress + (view.byteLength / this.numType.bytes);
+      let endAddress = startAddress + (view.byteLength / numType.bytes);
       if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(startAddress, endAddress, this);
       return endAddress;
     } catch (e) {
@@ -164,10 +172,11 @@ export class CPU {
   }
 
   /** Set every memory address in range to specified value. */
-  public writeMemoryBulk(start: number, end: number, value: number): void {
+  public writeMemoryBulk(start: number, end: number, value: number, numType?: INumberType): void {
+    numType = numType ?? this.numType;
     try {
       for (let address = start; address < end; address++) {
-        this._memory[this.numType.setMethod](address * this.numType.bytes, value);
+        this._memory[numType.setMethod](address * numType.bytes, value);
       }
       if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(start, end, this);
     } catch (e) {
@@ -235,10 +244,11 @@ export class CPU {
   }
 
   /** Get next word in memory, and increment IP */
-  public fetch(): number {
-    const ip = this.readRegister(this._ip);
-    const word = this.readMemory(ip);
-    this.writeRegister(this._ip, ip + 1);
+  public fetch(numType?: INumberType): number {
+    numType = numType || this.numType;
+    const ip = this.readRegister(this._ip, numType);
+    const word = this.readMemory(ip, numType);
+    this.writeRegister(this._ip, ip + numType.bytes);
     return word;
   }
 
