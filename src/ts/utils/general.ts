@@ -43,11 +43,12 @@ export const getTextMetrics = (ctx: CanvasRenderingContext2D, text: string): ITe
 
 export const splitString = (string: string, nSize: number): string[] => string.match(new RegExp(`.{1,${nSize}}`, 'g'));
 
-export const numericTypes: NumberType[] = ["int8", "uint8", "int16", "uint16", "int32", "uint32", "float32", "float64"];
+export const numericTypes: NumberType[] = ["int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64", "float32", "float64"];
 export const numericTypesAbbr = {
   i8: "int8", u8: "uint8",
   i16: "int16", u16: "uint16",
   i32: "int32", u32: "uint32",
+  i64: "int64", u64: "uint64",
   f32: 'float32',
   f64: 'float64',
 };
@@ -93,6 +94,18 @@ export function getNumTypeInfo(type: NumberType): INumberType {
       setMethod = "setUint32";
       bytes = 4;
       constructor = Uint32Array;
+      break;
+    case "int64":
+      getMethod = "getInt64";
+      setMethod = "setInt64";
+      bytes = 8;
+      constructor = BigInt64Array;
+      break;
+    case "uint64":
+      getMethod = "getUint64";
+      setMethod = "setUint64";
+      bytes = 8;
+      constructor = BigUint64Array;
       break;
     case "float32":
       getMethod = "getFloat32";
@@ -170,12 +183,28 @@ export function getMinMaxValues(datatype: NumberType | INumberType): [number, nu
     case 'uint16': return [0, 65535];
     case 'int32': return [-2147483648, 2147483647];
     case 'uint32': return [0, 4294967295];
+    case 'int64': return [-9223372036854775808, 9223372036854775807];
+    case 'uint64': return [0, 18446744073709551615];
     case 'float32': return [1.2e-38, 3.4e+38];
     case 'float64': return [5.0e-324, 1.7976931348623157e+308]; // Roughly 1.8e+308
     default:
       return [NaN, NaN];
   }
 }
+
+DataView.prototype.setInt64 = function (byteOffset: number, value: number): void {
+  return this.setBigInt64(byteOffset, BigInt(value));
+};
+DataView.prototype.getInt64 = function (byteOffset: number): number {
+  return Number(this.getBigInt64(byteOffset));
+};
+
+DataView.prototype.setUint64 = function (byteOffset: number, value: number): void {
+  return this.setBigUint64(byteOffset, BigInt(value));
+};
+DataView.prototype.getUint64 = function (byteOffset: number): number {
+  return Number(this.getBigUint64(byteOffset));
+};
 
 export const rowColToIndex = (row: number, col: number, cols: number) => (row * cols) + col;
 

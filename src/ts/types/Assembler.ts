@@ -36,7 +36,7 @@ export interface IInstructionInfo {
   args: Array<AssemblerType>; // Argument types
   desc: string; // Description
   isAQA?: boolean; // Is in the AQA instruction set? (for AQA-Arm)
-  typeSuffix?: boolean; // Accept type suffix?
+  typeSuffix?: boolean; // Accept type suffix? e.g. <mnemonic>i32
 };
 
 /** Describes a line of tokens in assembly */

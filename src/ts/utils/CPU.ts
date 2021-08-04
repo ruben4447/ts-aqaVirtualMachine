@@ -42,8 +42,10 @@ export const numberTypeMap = createEnum({
   uint16: 3,
   int32: 4,
   uint32: 5,
-  float32: 6,
-  float64: 7,
+  int64: 6,
+  uint64: 7,
+  float32: 8,
+  float64: 9,
 });
 
 export const numberTypeToObject = {};
