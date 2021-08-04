@@ -15,24 +15,27 @@ export class CPU {
   public static readonly defaultNumType: NumberType = 'float32';
   public static readonly requiredRegisters: string[] = ["ip", "sp", "fp"];
 
-  protected readonly _generalRegisters: string[];
   public readonly model: CPUModel = undefined; // NO MODEL
   public readonly instructionSet: ICPUInstructionSet;
-  protected readonly reversedInstructionSet: IReversedCPUInstructionSet;
   public readonly registerMap: string[]; // Map register names to index positions
+  public readonly memorySize: number;
+  public readonly numType: INumberType;
+  public executionConfig: ICPUExecutionConfig;
+  public displayDT: NumberType; // MemoryView
+  public instructType: INumberType; // Data type of instructions
+  public regType: INumberType; // Date type of registers
+  public instructTypeSuffixes: boolean = false; // Do instructions first argument contain a type?
+  
+  protected readonly _generalRegisters: string[];
+  protected readonly reversedInstructionSet: IReversedCPUInstructionSet;
   protected readonly __registers: ArrayBuffer;
   protected readonly _registers: DataView;
   protected readonly _ip: number; // As the Instruction Pointer is needed so often, this stord the index of IP in the register ArrayBuffer
-  public readonly memorySize: number;
   protected readonly __memory: ArrayBuffer;
   protected readonly _memory: DataView;
-  public readonly numType: INumberType;
   protected _callbackMemoryWrite: MemoryWriteCallback;
   protected _callbackRegisterWrite: RegisterWriteCallback;
   protected _stackFrameSize = 0; // Size (in bytes) of latest stack frame
-  public executionConfig: ICPUExecutionConfig;
-  public displayDT: NumberType; // MemoryView
-
 
   constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = []) {
     this.instructionSet = generateCPUInstructionSet(instructionSet);
@@ -40,6 +43,8 @@ export class CPU {
 
     this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
     this.displayDT = "int8"; // this.numType.type;
+    this.instructType = this.numType;
+    this.regType = this.numType;
 
     this.registerMap = config.registerMap || defaultRegisters;
     requiredRegisters = Array.from(new Set(CPU.requiredRegisters.concat(requiredRegisters)));
@@ -154,16 +159,14 @@ export class CPU {
     }
   }
 
-  /** Write ArrayBuffer of any length into memory, starting at said address. */
-  public loadMemoryBytes(startAddress: number, bytes: ArrayBuffer, numType?: INumberType): number {
-    numType = numType ?? this.numType;
+  /** Write ArrayBuffer of any length into memory, starting at said address (store uint8s) */
+  public loadMemoryBytes(startAddress: number, bytes: ArrayBuffer): number {
     try {
-      startAddress *= numType.bytes;
       const view = new DataView(bytes);
       for (let i = 0; i < view.byteLength; i++) {
         this._memory.setUint8(startAddress + i, view.getUint8(i));
       }
-      let endAddress = startAddress + (view.byteLength / numType.bytes);
+      let endAddress = startAddress + view.byteLength;
       if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(startAddress, endAddress, this);
       return endAddress;
     } catch (e) {
@@ -199,18 +202,20 @@ export class CPU {
   }
 
   // Push value to the stack
-  public push(value: number) {
+  public push(value: number, numType?: INumberType) {
+    numType = numType ?? this.numType;
     let spAddr = this.readRegister("sp");
-    this.writeMemory(spAddr, value);
-    this.writeRegister("sp", spAddr - 1); // Stack grows DOWN
-    this._stackFrameSize += 1;
+    this.writeMemory(spAddr, value, numType);
+    this.writeRegister("sp", spAddr - numType.bytes); // Stack grows DOWN
+    this._stackFrameSize += numType.bytes;
   }
 
   // Pop value from stack
-  public pop(): number {
-    let nextSPAddr = this.readRegister("sp") + 1; // The SP points at the next empty pos; therefore we need to increment the pointer by <bytes> first to get the top value
+  public pop(numType?: INumberType): number {
+    numType = numType ?? this.numType
+    let nextSPAddr = this.readRegister("sp") + numType.bytes; // The SP points at the next empty pos; therefore we need to increment the pointer by <bytes> first to get the top value
     this.writeRegister("sp", nextSPAddr);
-    this._stackFrameSize -= 1;
+    this._stackFrameSize -= numType.bytes;
     return this.readMemory(nextSPAddr);
   }
 
@@ -245,7 +250,7 @@ export class CPU {
 
   /** Get next word in memory, and increment IP */
   public fetch(numType?: INumberType): number {
-    numType = numType || this.numType;
+    numType = numType ?? this.numType;
     const ip = this.readRegister(this._ip, numType);
     const word = this.readMemory(ip, numType);
     this.writeRegister(this._ip, ip + numType.bytes);
@@ -264,9 +269,9 @@ export class CPU {
     try {
       let opcode: number;
       try {
-        opcode = this.fetch();
+        opcode = this.fetch(this.instructType);
       } catch (e) {
-        const error = new Error(`cycle: cannot fetch next word in memory:\n${e}`);
+        const error = new Error(`cycle: cannot fetch ${this.instructType.type} instruction:\n${e}`);
         info.error = error;
         info.text = e.message;
         throw error;

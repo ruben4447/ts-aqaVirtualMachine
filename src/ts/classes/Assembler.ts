@@ -1,8 +1,10 @@
 import CPU from "./CPU/CPU";
 import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
 import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
-import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, underlineStringPortion } from "../utils/general";
+import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, numericTypesAbbr, underlineStringPortion } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
+import { INumberType, NumberType } from "../types/general";
+import { numberTypeMap, numberTypeToObject } from "../utils/CPU";
 
 export class AssemblerError extends Error {
   protected _messageStack: string[];
@@ -95,7 +97,7 @@ export class Assembler {
    * Results can be obtained via this.getAST() or this.getBytes()
    */
   public parse(assembly: string, origin: string = "<anonymous>"): void {
-    let ast: IAssemblyLine[], nums: number[];
+    let ast: IAssemblyLine[], buff: ArrayBuffer;
     this._labels.clear();
     this._symbols.clear();
 
@@ -111,7 +113,7 @@ export class Assembler {
     this._ast = ast;
 
     try {
-      nums = this._astToNums(ast);
+      buff = this._astToBuffer(ast);
     } catch (e) {
       if (e instanceof AssemblerError) {
         e.fileName = origin;
@@ -120,7 +122,7 @@ export class Assembler {
       throw e;
     }
 
-    this._bytes = arrayToBuffer(nums, this._cpu.numType);
+    this._bytes = buff;
   }
 
   /**
@@ -138,11 +140,11 @@ export class Assembler {
         const parts = line.replace(/,/g, ' ').split(/\s+/g).filter(x => x.length > 0);
 
         // If instruction...
-        const instruction = this._getInstructionFromString(parts[0].toUpperCase());
-        if (instruction !== null) {
+        const iobj = this._getInstructionFromString(parts[0].toUpperCase());
+        if (iobj !== null) {
           parts.shift();
-          let uinstruction = instruction.toUpperCase();
-          const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, instruction: undefined, opcode: NaN, args: [], };
+          let uinstruction = iobj.instruction.toUpperCase();
+          const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, ntype: iobj.ntype, instruction: undefined, opcode: NaN, args: [], };
           try {
             this._parseInstruction(uinstruction, parts, instructionLine);
           } catch (e) {
@@ -226,9 +228,27 @@ export class Assembler {
    * Parse AST, return number[] array of "bytes"
    * Populate this._labels
    */
-  private _astToNums(ast: IAssemblyLine[]): number[] {
-    const nums: number[] = [];
+  private _astToBuffer(ast: IAssemblyLine[]): ArrayBuffer {
+    let buff: ArrayBuffer, dv: DataView, bytes = 0;
     let address = this.startAddress; // Current address
+
+    // Calculate byte length
+    ast.forEach(line => {
+      if (line.type === AssemblyLineType.Instruction) {
+        bytes += this._cpu.instructType.bytes; // Instruction
+        // console.log(`${line.instruction}: + ${this._cpu.instructType.bytes}`)
+        if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) {
+          // console.log(`${line.instruction}: + 1 (type)`)
+          bytes++;
+        }
+        line.args.forEach(arg => {
+          bytes += numberTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes;
+          // console.log(`${line.instruction}: arg: + ${numberTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes}`, arg)
+        });
+      }
+    });
+    buff = new ArrayBuffer(bytes);
+    dv = new DataView(buff);
 
     // Resolve label addresses
     for (let i = 0; i < ast.length; i++) {
@@ -236,7 +256,11 @@ export class Assembler {
       if (line.type === AssemblyLineType.Label) {
         this._labels.set((line as IAssemblyLabelDeclarationLine).label, address);
       } else if (line.type === AssemblyLineType.Instruction) {
-        address += 1 + (line as IAssemblyInstructionLine).args.length;
+        address += this._cpu.instructType.bytes;
+        if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) bytes++;
+        line.args.forEach(arg => {
+          address += numberTypeToObject[arg.ntype].bytes;
+        });
       }
     }
 
@@ -251,15 +275,26 @@ export class Assembler {
       });
     });
 
-    for (let i = 0; i < ast.length; i++) {
+    let byteOffset = 0; // Byte offset into buffer
+    for (let i = 0, typeObj: INumberType; i < ast.length; i++) {
       try {
         let line = ast[i];
 
         if (line.type === AssemblyLineType.Instruction) {
           const info = line as IAssemblyInstructionLine;
-          nums.push(info.opcode); // Push opcode to nums array
-          info.args.forEach(arg => nums.push(arg.num));
-          address += 1 + info.args.length;
+          typeObj = this._cpu.instructType;
+          dv[typeObj.setMethod](byteOffset, info.opcode); // Add opcode to memory
+          byteOffset += typeObj.bytes;
+
+          if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) {
+            dv.setUint8(byteOffset++, numberTypeMap[info.ntype]);
+          }
+
+          info.args.forEach(arg => {
+            typeObj = numberTypeToObject[arg.ntype];
+            dv[typeObj.setMethod](byteOffset, arg.num); // Add argument's numeric representation to memory
+            byteOffset += typeObj.bytes;
+          });
         } else if (line.type === AssemblyLineType.Label) { } else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
@@ -275,7 +310,7 @@ export class Assembler {
       }
     }
 
-    return nums;
+    return buff;
   }
 
   /** Parse an instruction */
@@ -284,7 +319,8 @@ export class Assembler {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
       if (arg.length == 0) continue;
-      let obj = this._parseArgument(arg);
+      let obj = this._parseArgument(arg, line.ntype);
+      if (obj.ntype == undefined) obj.ntype = line.ntype;
       line.args.push(obj);
     }
 
@@ -313,7 +349,7 @@ export class Assembler {
   }
 
   /** Parse an argument string and return an information object */
-  private _parseArgument(argument: string): IAssemblerToken {
+  private _parseArgument(argument: string, instructionType: NumberType): IAssemblerToken {
     const token: IAssemblerToken = { type: undefined, value: argument, num: undefined, };
     let expandedSymbol;
 
@@ -328,7 +364,7 @@ export class Assembler {
       let argStr = argument.substr(1), token: IAssemblerToken;
       if (argStr.length === 0) throw new AssemblerError(`Syntax Error: invalid syntax '${argument}'`, argument);
       try {
-        token = this._parseArgument(argStr);
+        token = this._parseArgument(argStr, instructionType);
       } catch (e) {
         if (e instanceof AssemblerError) {
           e.insertMessage(`Error whilst parsing pointer argument '${argument}':`);
@@ -368,6 +404,7 @@ export class Assembler {
         // Register
         token.type = AssemblerType.Register;
         token.num = registerIndex;
+        token.ntype = this._cpu.regType.type;
       } else {
         // Extract address from argument
         let base = argument[0] === '-' ? undefined : getNumericBaseFromPrefix(argument[0]), addr: number;
@@ -405,15 +442,37 @@ export class Assembler {
 
   /**
    * Return instruction if given string is an instruction
+   * Syntax: <mnemonic>[ntype]
   */
-  private _getInstructionFromString(string: string): string | null {
+  private _getInstructionFromString(string: string): { instruction: string, ntype: NumberType } | null {
     // Replace command via replaceCommandMap?
     if (string in this.replaceCommandMap) string = this.replaceCommandMap[string].replaceWith;
-
     const stringL = string.toLowerCase();
     for (let instruction in this._imap) {
       if (this._imap.hasOwnProperty(instruction)) {
-        if (this._imap[instruction].mnemonic.toLowerCase() === stringL) return string;
+        const mnemonic = this._imap[instruction].mnemonic.toLowerCase();
+        if (mnemonic === stringL.substr(0, mnemonic.length)) {
+          // Find numeric type
+          let remains = stringL.substr(mnemonic.length), ntype: NumberType;
+          if (this._cpu.instructTypeSuffixes) {
+            for (let abbr in numericTypesAbbr) {
+              if (numericTypesAbbr.hasOwnProperty(abbr) && abbr === remains.substr(0, abbr.length).toLowerCase()) {
+                ntype = numericTypesAbbr[abbr] as NumberType;
+              }
+            }
+          }
+          if (ntype === undefined) {
+            ntype = this._cpu.numType.type;
+          } else {
+            remains = remains.substr(ntype.length);
+          }
+          if (remains.length > 0) return null;
+
+          return {
+            instruction: mnemonic,
+            ntype,
+          };
+        }
       }
     }
     return null;

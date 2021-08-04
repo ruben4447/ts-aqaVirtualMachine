@@ -21,7 +21,7 @@ The `Instruction Set` Tab shows this.
 ## CPU
 The CPU has an ArrayBuffer for registers and for memory, having the ability to read and write from either of these.
 
-Both memory and the registers depend on the CPUs *numerical type* - this is tored in `#<CPU>.numType` and is immutable. This dictates what format data is get/set from DataViews. This is settable during CPU construction and should not be changed (unexpected results may arise).
+Both memory and the registers are read using a *numerical type* - the processors default is stored in `#<CPU>.numType` and is immutable, but instructions may read different types dynamically. This dictates what format data is get/set from DataViews. This is settable during CPU construction and should not be changed (unexpected results may arise).
 
 Writing to either memory or registers will trigger a respective callback. This callback will not influence the writing process.
 

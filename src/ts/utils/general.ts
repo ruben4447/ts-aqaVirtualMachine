@@ -44,6 +44,14 @@ export const getTextMetrics = (ctx: CanvasRenderingContext2D, text: string): ITe
 export const splitString = (string: string, nSize: number): string[] => string.match(new RegExp(`.{1,${nSize}}`, 'g'));
 
 export const numericTypes: NumberType[] = ["int8", "uint8", "int16", "uint16", "int32", "uint32", "float32", "float64"];
+export const numericTypesAbbr = {
+  i8: "int8", u8: "uint8",
+  i16: "int16", u16: "uint16",
+  i32: "int32", u32: "uint32",
+  f32: 'float32',
+  f64: 'float64',
+};
+export const numericTypesAbbrEnum = createEnum(numericTypesAbbr);
 
 /** Given number type, return information */
 export function getNumTypeInfo(type: NumberType): INumberType {

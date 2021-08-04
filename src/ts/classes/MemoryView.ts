@@ -142,7 +142,7 @@ export class MemoryView {
     this.screen.x = x;
     this.screen.y = y;
 
-    const value = this.cpu.readMemory(address);
+    const value = this.cpu.readMemory(address, this._type);
     let text = numberToString(this._type, value, this._base);
     if (address === this.cpu.readRegister("ip")) {
       withinState(this.screen, S => {

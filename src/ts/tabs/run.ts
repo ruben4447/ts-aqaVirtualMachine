@@ -4,7 +4,7 @@ import { AssemblerType } from "../types/Assembler";
 import { createExecuteRecordObject, IExecuteRecord } from "../types/CPU";
 import { ITextMeasurements } from "../types/general";
 import { IRunTabProperties, ITabInfo } from "../types/Tabs";
-import { createLink, hex } from "../utils/general";
+import { createLink, hex, numberToString } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -202,7 +202,8 @@ function displayExecInfo(info: IExecuteRecord) {
     for (let i = 0; i < info.args.length; i++) argDetails.push("");
   }
 
-  const machineCode: string[] = [info.opcode, ...info.args].map(n => "0x" + globals.cpu.toHex(n));
+  const machineCode: string[] = ["0x" + numberToString(globals.cpu.instructType, info.opcode, 16)];
+  machineCode.push(...info.args.map(n => "0x" + globals.cpu.toHex(n)));
   const machineCodeDimensions: ITextMeasurements[] = machineCode.map(x => S.measureText(x));
 
   const details: string[] = [mnemonic, ...argDetails];

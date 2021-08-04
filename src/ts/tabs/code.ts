@@ -3,7 +3,8 @@ import Popup from "../classes/Popup";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, readTextFile } from "../utils/general";
+import { numberTypeToObject } from "../utils/CPU";
+import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, numericTypesAbbr, numericTypesAbbrEnum, readTextFile } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -259,7 +260,7 @@ export function compileAssembly() {
       let dy = S.measureText('A').height * 1.5;
       S.y = 10;
 
-      let lines = [`Assembled code (${buffer.byteLength} bytes)`, `... Format: ${globals.cpu.numType.type}`, `... Words: ${buffer.byteLength / globals.cpu.numType.bytes}`, `... Word Size: ${globals.cpu.numType.bytes} bytes`];
+      let lines = [`Assembled code (${buffer.byteLength} bytes)`];
       for (let line of lines) {
         S.writeString(line, false);
         S.y += dy;
@@ -317,13 +318,14 @@ export function decompileMachineCode() {
 function displayPartialTranslation() {
   updateLabelTable();
   const lines = globals.assembler.getAST();
-  let text = '';
+  const type = t => globals.cpu.instructTypeSuffixes ? `(${numericTypesAbbrEnum[t]})` : '';
+  let text = '', itype = globals.cpu.instructType.type;
   for (const line of lines) {
     if (line.type === AssemblyLineType.Instruction) {
       const info = line as IAssemblyInstructionLine;
-      text += `[${info.instruction}] ${info.opcode}`;
+      text += `[${info.instruction}] ${type(itype)}${info.opcode}`;
       if (info.args.length > 0) {
-        text += ` : ${info.args.map(x => `<${AssemblerType[x.type].toLowerCase()}> ${x.num == undefined ? `'${x.value}'` : x.num}`).join(', ')}`;
+        text += ` : ${info.args.map(a => `<${AssemblerType[a.type].toLowerCase()}> ${type(a.ntype)}${a.num == undefined ? `'${a.value}'` : a.num}`).join(', ')}`;
       }
       text += '\n';
     }
@@ -334,12 +336,11 @@ function displayPartialTranslation() {
 function displayMachineCode() {
   // Machine code - array of uint8 bytes
   let machineCode = '';
-  const view = new DataView(properties.machineCode);
-  const byteCount = view.byteLength, wordCount = byteCount / globals.cpu.numType.bytes;
+  const view = new DataView(properties.machineCode), ntype = numberTypeToObject["uint8"];
 
-  for (let i = 0; i < wordCount; i++) {
-    const number = view[globals.cpu.numType.getMethod](i * globals.cpu.numType.bytes); // Get {i} word
-    let text = numberToString(globals.cpu.numType, number, globals.memoryView.base);
+  for (let i = 0; i < view.byteLength; i++) {
+    const number = view[ntype.getMethod](i);
+    let text = numberToString(ntype, number, globals.memoryView.base);
     machineCode += text + ' ';
   }
   properties.machineCodeInput.value = machineCode;
@@ -348,7 +349,7 @@ function displayMachineCode() {
 export function loadMachineCodeToMemory(startAddress?: number) {
   if (startAddress === undefined) startAddress = 0;
   if (properties.machineCode instanceof ArrayBuffer) {
-    let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode);
+    let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode, numberTypeToObject["uint8"]);
 
     withinState(globals.output, S => {
       S.reset();
@@ -359,7 +360,7 @@ export function loadMachineCodeToMemory(startAddress?: number) {
       S.y = 10;
 
       const base = globals.memoryView.base;
-      let lines = [`Loaded ${properties.machineCode.byteLength} bytes into memory`, `... Format: ${globals.cpu.numType.type} (${globals.cpu.numType.bytes} bytes per word)`, `... Start address: ${startAddress.toString(base)}`, `... End address: ${endAddress.toString(base)}`, `... Addresses: ${(endAddress - startAddress).toString(base)}`];
+      let lines = [`Loaded ${properties.machineCode.byteLength} bytes into memory`, `... Start address: ${startAddress.toString(base)}`, `... End address: ${endAddress.toString(base)}`, `... Addresses: ${(endAddress - startAddress).toString(base)}`];
       for (let line of lines) {
         S.writeString(line, false);
         S.y += dy;

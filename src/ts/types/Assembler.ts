@@ -1,8 +1,11 @@
+import { NumberType } from "./general";
+
 /** A toke used by the assembler */
 export interface IAssemblerToken {
   type: AssemblerType;
   value: string; // Original value
   num: number; // Numerical value
+  ntype?: NumberType; // Data type of tokens 'num'. If not value, processors default is used
 };
 
 /** Type of operands */
@@ -33,6 +36,7 @@ export interface IInstructionInfo {
   args: Array<AssemblerType>; // Argument types
   desc: string; // Description
   isAQA?: boolean; // Is in the AQA instruction set? (for AQA-Arm)
+  typeSuffix?: boolean; // Accept type suffix?
 };
 
 /** Describes a line of tokens in assembly */
@@ -43,6 +47,7 @@ export interface IAssemblyLine {
 /** Represent an assembly instruction line */
 export interface IAssemblyInstructionLine extends IAssemblyLine {
   instruction: string;
+  ntype: NumberType;
   opcode: number;
   args: Array<IAssemblerToken>;
 }

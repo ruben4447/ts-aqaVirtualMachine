@@ -139,7 +139,7 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.AQAARM, {
+  __app_init_(CPUModel.RS, {
     numType: 'int16',
   });
 
@@ -147,6 +147,11 @@ function __app_main_() {
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
 
   globals.tabs._.open("code");
+
+  tabCode.properties.assemblyCodeInput.value = `
+movi32 r8, r1
+hlt
+  `.trim();
 
 //   tabCode.properties.assemblyCodeInput.value = `
 // main:
@@ -161,12 +166,6 @@ function __app_main_() {
 //   mul acc, acc
 //   ret
 //   `.trim();
-  tabCode.properties.assemblyCodeInput.value = `
-mov r1, #13
-mov r2, #5
-add r3, r1, r2
-halt
-  `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }
@@ -176,3 +175,5 @@ window.addEventListener('load', () => {
 });
 
 // TODO:
+// - Type suffix on instruction only if flag is true
+// - Push numType as uint8 immediatly after instruction

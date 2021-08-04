@@ -1,8 +1,9 @@
 import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
-import { NumberType } from "../../types/general";
+import { INumberType, NumberType } from "../../types/general";
 import CPU from "./CPU";
 import { instructionSet } from '../../instruction-set/rs';
-import { CMP, compare } from "../../utils/CPU";
+import { CMP, compare, numberTypeMap, numberTypeToObject } from "../../utils/CPU";
+import { getNumTypeInfo, getTextMetrics } from "../../utils/general";
 
 export class RSProcessor extends CPU {
     public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
@@ -15,7 +16,30 @@ export class RSProcessor extends CPU {
     public constructor(config: ICPUConfiguration) {
         super(instructionSet, config, RSProcessor.defaultRegisters, RSProcessor.defaultNumType, RSProcessor.requiredRegisters);
         this._acc = this.registerMap.indexOf('acc');
-        this.displayBytes = true;
+
+        const uint8 = getNumTypeInfo("uint8");
+        this.instructType = uint8;
+        this.regType = uint8;
+        this.instructTypeSuffixes = true;
+    }
+
+    /** Fetch from memory given data type */
+    fetchType(dt: NumberType) {
+        return super.fetch(numberTypeToObject[dt]);
+    }
+
+    /** Fetch byte indicating data type */
+    fetchDT() { return this.fetch(numberTypeToObject["uint8"]); }
+
+    /** Fetch register from memory */
+    fetchReg() { return this.fetch(this.regType); }
+
+    /** Get next byte indicating a DATA TYPE from memory */
+    getDataType() {
+        const n = this.fetch(numberTypeToObject["uint8"]);
+        const str = numberTypeMap[n];
+        if (str == undefined) throw new Error(`SIGILL - unknown data type flag ${n}`);
+        return { type: n, typeStr: str }
     }
 
     /** @override */
@@ -35,9 +59,11 @@ export class RSProcessor extends CPU {
                 break;
             case this.instructionSet.MOV_REG_REG: {
                 // MOV register1 register2
-                const register1 = this.fetch(), register2 = this.fetch();
-                info.args = [register1, register2];
-                const register2value = this.readRegister(register2);
+                const { type, typeStr } = this.getDataType();
+                console.log(type, typeStr);
+                const register1 = this.fetchReg(), register2 = this.fetchReg();
+                info.args = [type, register1, register2];
+                const register2value = this.readRegister(register2, numberTypeToObject[typeStr]);
                 if (comment) info.text = `Copy value in register ${this.registerMap[register2]} (0x${this.toHex(register2value)}) to register ${this.registerMap[register1]}`;
                 this.writeRegister(register1, register2value);
                 break;
