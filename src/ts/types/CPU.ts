@@ -33,6 +33,7 @@ export interface IExecuteRecord {
   text: string;
   error?: Error;
   termination: boolean; // Terminate execution?
+  type?: number; // Instruction type (number in numberTypeMap)? (Default: type of CPU)
 }
 
 export function createExecuteRecordObject(): IExecuteRecord {

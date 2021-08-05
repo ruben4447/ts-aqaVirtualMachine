@@ -1,9 +1,8 @@
 import CPU from "./CPU/CPU";
 import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
 import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
-import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject } from "../utils/general";
-import { ICPUInstructionSet } from "../types/CPU";
-import { INumberType, NumberType, numberTypeMap } from "../types/general";
+import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
+import { INumberType, NumberType } from "../types/general";
 
 export class AssemblerError extends Error {
   protected _messageStack: string[];
@@ -406,7 +405,7 @@ export class Assembler {
         token.num = registerMeta.offset;
         token.ntype = this._cpu.regType.type;
       } else {
-        // Extract address from argument
+        // Address..?
         let base = argument[0] === '-' ? undefined : getNumericBaseFromPrefix(argument[0]), addr: number;
         if (base === undefined) {
           addr = parseInt(argument); // No base
@@ -419,6 +418,7 @@ export class Assembler {
         if (!isNaN(addr)) {
           token.type = AssemblerType.Address;
           token.num = addr;
+          token.ntype = this._cpu.addrType.type;
         } else {
           // Symbol?
           if (isValidSymbol(argument)) {
@@ -433,9 +433,6 @@ export class Assembler {
         }
       }
     }
-
-    // if there is a number, and CPU operates on an integer typing...
-    if (token.num !== undefined && this._cpu.numType.isInt) token.num = Math.floor(token.num);
 
     return token;
   }

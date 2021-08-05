@@ -2,7 +2,7 @@ import globals from "../globals";
 import { AssemblerType, IInstructionSet } from "../types/Assembler";
 import { CPUModel } from "../types/CPU";
 import { IInstructionSetTabProperties, ITabInfo } from "../types/Tabs";
-import { capitalise, hex, objectGroupBy, sortObjectByKey, sortObjectByKeyAlphabetical, sortObjectKeysAlphabetical } from "../utils/general";
+import { booleanToHTML, capitalise, hex, objectGroupBy, sortObjectByKey, sortObjectByKeyAlphabetical, sortObjectKeysAlphabetical } from "../utils/general";
 
 export const info: ITabInfo = {
   content: undefined,
@@ -21,7 +21,7 @@ function generateAssemblerInstructionSetHTML(): HTMLDivElement {
 
   const table = document.createElement('table');
   wrapper.appendChild(table);
-  table.insertAdjacentHTML('beforeend', `<thead><tr><th>Parent Mnemonic</th><th>Mnemonic</th><th>Opcode</th>${isAQAProcessor ? `<th title='Is instruction present in the A-level AQA assembly language spec?'>AQA?</th>` : ``}<th>Arguments</th><th>Description</th></tr></thead>`);
+  table.insertAdjacentHTML('beforeend', `<thead><tr><th>Parent Mnemonic</th><th>Mnemonic</th><th>Opcode</th>${globals.cpu.instructTypeSuffixes ? `<th><abbr title='Does command accept type suffix e.g. "i32" after the command?'>Type Suffix</abbr></th>` : ''}${isAQAProcessor ? `<th title='Is instruction present in the A-level AQA assembly language spec?'>AQA?</th>` : ``}<th>Arguments</th><th>Description</th></tr></thead>`);
   const tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
@@ -62,7 +62,8 @@ function _instructionSetHtmlRow(instructionSet: IInstructionSet, instruction: st
   tr.insertAdjacentHTML('beforeend', `<td>${instruction}</td>`);
   const word = globals.cpu.toHex(info.opcode);
   tr.insertAdjacentHTML('beforeend', `<td><code title='CPU word: 0x${word}'>0x${hex(info.opcode)}</code></td>`);
-  if (isAQAProcessor) tr.insertAdjacentHTML('beforeend', `<td><span style='color:${info.isAQA ? 'green' : 'red'}'>${info.isAQA ? "Yes" : "No"}</span></td>`);
+  if (globals.cpu.instructTypeSuffixes) tr.insertAdjacentHTML('beforeend', `<td>${booleanToHTML(info.typeSuffix)}</td>`);
+  if (isAQAProcessor) tr.insertAdjacentHTML('beforeend', `<td>${booleanToHTML(info.isAQA)}</td>`);
 
   const args = info.args.length === 0 ? '' : '<code>' + info.args.map(a => `&lt;${AssemblerType[a]}&gt;`).join(' ') + '</code>';
   tr.insertAdjacentHTML('beforeend', `<td title='${info.args.length} arguments'>${args}</td>`);

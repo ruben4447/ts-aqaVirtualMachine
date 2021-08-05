@@ -15,6 +15,8 @@ export class ARMProcessor extends CPU {
     // Call super's constructor, but wih our defaults
     config.appendRegisterMap = { ...config.appendRegisterMap, cmp: createRegister(16, 'int64', false, 'Stack frame pointer (points to top of current stack frame)') };
     super(instructionSet ?? aqaInstructionSet, config, ARMProcessor.defaultNumType);
+
+    this.resetRegisters();
   }
 
   public execute(opcode: number, info: IExecuteRecord): boolean {

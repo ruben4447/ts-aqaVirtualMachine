@@ -21,6 +21,7 @@ export class CPU {
   public executionConfig: ICPUExecutionConfig;
   public instructType: INumberType; // Data type of instructions
   public regType: INumberType; // Date type of registers
+  public addrType: INumberType; // Date type of addresses
   public instructTypeSuffixes: boolean = false; // Do instructions first argument contain a type?
   public regStackPtr: string = 'sp'; // Name of register which contains stack pointer
   public regInstructionPtr: string = 'ip'; // Name of register which contains instruction pointer
@@ -44,6 +45,7 @@ export class CPU {
     this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
     this.instructType = this.numType;
     this.regType = this.numType;
+    this.addrType = this.numType;
 
     if (config.registerMap) {
       this.registerMap = config.registerMap;
@@ -78,7 +80,6 @@ export class CPU {
     this.__memory = new ArrayBuffer(this.memorySize);
     this._memory = new DataView(this.__memory);
 
-    this.resetRegisters();
     this.executionConfig = createCPUExecutionConfigObject();
   }
 
@@ -326,39 +327,6 @@ export class CPU {
   /** Throw error when opcode is unknown */
   _throwUnknownOpcode(opcode) {
     throw new Error(`[SIGILL] illegal instruction 0x${opcode.toString(16)}`);
-  }
-
-  /** Add "realistic" registers to a CPU */
-  setAdvRegisters() {
-    const R = createRegister;
-    let roff = 0;
-    this.registerMap = {
-      rax: R(0 + 0, "int64", false), eax: R(0 + 4, "int32", false), ax: R(0 + 6, "int16", false), al: R(0 + 7, "int8", false), // ACCUMULATOR
-      rbx: R(8 + 0, "int64", true), ebx: R(8 + 4, "int32", true), bx: R(8 + 6, "int16", true), bl: R(8 + 7, "int8", true),
-      rcx: R(16 + 0, "int64", false), ecx: R(16 + 4, "int32", false), cx: R(16 + 6, "int16", false), cl: R(16 + 7, "int8", false),
-      rdx: R(24 + 0, "int64", false), edx: R(24 + 4, "int32", false), dx: R(24 + 6, "int16", false), dl: R(24 + 7, "int8", false),
-      rsp: R(32 + 0, "int64", true), esx: R(32 + 4, "int32", true), sp: R(32 + 6, "int16", true), spl: R(32 + 7, "int8", true), // STACK POINTER
-      rbp: R(40 + 0, "int64", true), ebp: R(40 + 4, "int32", true), bp: R(40 + 6, "int16", true), bpl: R(40 + 7, "int8", true), // FRAME (BASE) POINTER
-      rsi: R(48 + 0, "int64", false), esi: R(48 + 4, "int32", false), si: R(48 + 6, "int16", false), sil: R(48 + 7, "int8", false),
-      rdi: R(56 + 0, "int64", false), edi: R(56 + 4, "int32", false), di: R(56 + 6, "int16", false), dil: R(56 + 7, "int8", false),
-      r8: R(64 + 0, "int64", false), r8d: R(64 + 4, "int32", false), r8w: R(64 + 6, "int16", false), r8b: R(64 + 7, "int8", false),
-      r9: R(72 + 0, "int64", false), r9d: R(72 + 4, "int32", false), r9w: R(72 + 6, "int16", false), r9b: R(72 + 7, "int8", false),
-      r10: R(80 + 0, "int64", false), r10d: R(80 + 4, "int32", false), r10w: R(80 + 6, "int16", false), r10b: R(80 + 7, "int8", false),
-      r11: R(88 + 0, "int64", false), r11d: R(88 + 4, "int32", false), r11w: R(88 + 6, "int16", false), r11b: R(88 + 7, "int8", false),
-      r12: R(96 + 0, "int64", true), r12d: R(96 + 4, "int32", true), r12w: R(96 + 6, "int16", true), r12b: R(96 + 7, "int8", true),
-      r13: R(104 + 0, "int64", true), r13d: R(104 + 4, "int32", true), r13w: R(104 + 6, "int16", true), r13b: R(104 + 7, "int8", true),
-      r14: R(112 + 0, "int64", true), r14d: R(112 + 4, "int32", true), r14w: R(112 + 6, "int16", true), r14b: R(112 + 7, "int8", true),
-      r15: R(120 + 0, "int64", true), r15d: R(120 + 4, "int32", true), r15w: R(120 + 6, "int16", true), r15b: R(120 + 7, "int8", true),
-      rip: R(128 + 0, "int64", true), eip: R(128 + 4, "int32", true), ip: R(128 + 6, "int16", true), // Instruction pointer
-      rflags: R(136 + 0, "int64", false), eflags: R(136 + 4, "int32", false), flags: R(136 + 6, "int16", false), // Contains flags
-    }
-    roff = 144;
-    for (let i = 0; i <= 31; i++, roff += 8)
-      this.registerMap['xmm' + i] = R(roff, "float64", false);
-    for (let i = 0; i <= 7; i++, roff += 8)
-      this.registerMap['mm' + i] = R(roff, "float64", false);
-    this.__registers = new ArrayBuffer(roff);
-    this._registers = new DataView(this.__registers);
   }
 }
 

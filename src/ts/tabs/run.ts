@@ -2,9 +2,9 @@ import CustomScreen from "../classes/Screen";
 import globals from "../globals";
 import { AssemblerType } from "../types/Assembler";
 import { createExecuteRecordObject, IExecuteRecord } from "../types/CPU";
-import { ITextMeasurements } from "../types/general";
+import { INumberType, ITextMeasurements, NumberType } from "../types/general";
 import { IRunTabProperties, ITabInfo } from "../types/Tabs";
-import { createLink, hex, numberToString } from "../utils/general";
+import { createLink, hex, numberToString, numberTypeMap, numericTypesAbbr, numericTypesAbbrEnum, numericTypeToObject } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeInCentre, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -185,6 +185,17 @@ export function run() {
 }
 
 function displayExecInfo(info: IExecuteRecord) {
+  /** Return hex of a number given the representation type */
+  const hexType = (n: number, t: AssemblerType | "opcode" | "ip") => {
+    let type: INumberType;
+    if (t === AssemblerType.Register) type = globals.cpu.regType;
+    else if (t === AssemblerType.Address) type = globals.cpu.addrType;
+    else if (t === "opcode") type = globals.cpu.instructType;
+    else if (t === "ip") type = numericTypeToObject[globals.cpu.registerMap[globals.cpu.regInstructionPtr].type];
+    else type = numericTypeToObject[numberTypeMap[info.type]];
+    return numberToString(type, n, 16);
+  };
+
   const S = properties.feedbackScreen;
   S.clear();
   loadCodeFont(S);
@@ -195,7 +206,7 @@ function displayExecInfo(info: IExecuteRecord) {
       let detail = '';
       if (commandInfo.args[i] == AssemblerType.Address) detail = "0x" + hex(info.args[i]); // Integer hexadecimal
       else if (commandInfo.args[i] == AssemblerType.Register) detail = globals.cpu.registerFromOffset(info.args[i]); // Register name
-      else if (commandInfo.args[i] == AssemblerType.RegisterPtr) detail = '*' + globals.cpu.registerMap[info.args[i]]; // Register name
+      else if (commandInfo.args[i] == AssemblerType.RegisterPtr) detail = '*' + globals.cpu.registerFromOffset(info.args[i]); // Register name
       argDetails.push(detail);
     }
   } else {
@@ -203,7 +214,7 @@ function displayExecInfo(info: IExecuteRecord) {
   }
 
   const machineCode: string[] = ["0x" + numberToString(globals.cpu.instructType, info.opcode, 16)];
-  machineCode.push(...info.args.map(n => "0x" + globals.cpu.toHex(n)));
+  machineCode.push(...info.args.map((n, i) => "0x" + hexType(n, commandInfo.args[i])));
   const machineCodeDimensions: ITextMeasurements[] = machineCode.map(x => S.measureText(x));
 
   const details: string[] = [mnemonic, ...argDetails];
@@ -214,17 +225,28 @@ function displayExecInfo(info: IExecuteRecord) {
   const titleColour = "yellow", normalColour = "white", extraColour = "lightblue", extraInfoSpace = 12;
   S.x = startX;
   S.setForeground(normalColour);
-  for (let i = 0; i < machineCode.length; i++) {
+  for (let i = 0, f = false; i < machineCode.length; i++) {
     S.y = startY;
 
-    const maxW = Math.max(machineCodeDimensions[i].width, detailDimensions[i].width);
+    let maxW: number, byte: string, desc: string;
+    if (commandInfo.typeSuffix && i === 1 && !f) {
+      byte = "0x" + hex(info.type, 2);
+      desc = numericTypesAbbrEnum[numberTypeMap[info.type]];
+      maxW = Math.max(S.measureText(byte).width, S.measureText(desc).width);
+      f = true;
+      i--;
+    } else {
+      maxW = Math.max(machineCodeDimensions[i].width, detailDimensions[i].width);
+      byte = machineCode[i];
+      desc = details[i];
+    }
 
     S.setForeground(normalColour);
-    S.writeString(machineCode[i], false);
+    S.writeString(byte, false);
 
     S.y += charDim.height;
     S.setForeground("lightgrey");
-    S.writeString(details[i], false);
+    S.writeString(desc, false);
 
     S.x += maxW + spacing;
   }
@@ -248,7 +270,7 @@ function displayExecInfo(info: IExecuteRecord) {
   S.writeString("INSTRUCTION POINTER:");
   S.x = spacedX;
   S.setForeground(normalColour);
-  S.writeString("0x" + hex(info.ip));
+  S.writeString("0x" + hexType(info.ip, 'ip'));
 
   // OPCODE
   S.y += charDim.height;
@@ -257,7 +279,7 @@ function displayExecInfo(info: IExecuteRecord) {
   S.writeString("OPCODE:");
   S.x = spacedX;
   S.setForeground(normalColour);
-  S.writeString(`0x${hex(info.opcode)} `);
+  S.writeString(`0x${hexType(info.opcode, 'opcode')} `);
   if (mnemonic !== undefined) {
     S.x += extraInfoSpace;
     S.setForeground(extraColour);
@@ -273,10 +295,22 @@ function displayExecInfo(info: IExecuteRecord) {
     S.x = spacedX;
     S.writeString('-');
   } else {
+    if (commandInfo.typeSuffix) { // Command type?
+      S.x = spacedX;
+      S.setForeground(normalColour);
+      let text = `<datatype> 0x${hex(info.type, 2)} `;
+      S.writeString(text);
+
+      S.x += extraInfoSpace;
+      S.setForeground(extraColour);
+      S.writeString(`[${numberTypeMap[info.type]}]`);
+      S.y += charDim.height;
+    }
+
     for (let i = 0; i < info.args.length; i++) {
       S.x = spacedX;
       S.setForeground(normalColour);
-      let text = `<${AssemblerType[commandInfo.args[i]].toLowerCase()}> 0x${globals.cpu.toHex(info.args[i])} `
+      let text = `<${AssemblerType[commandInfo.args[i]].toLowerCase()}> 0x${hexType(info.args[i], commandInfo.args[i])} `;
       S.writeString(text);
 
       const detail = details[i + 1]; // '+ 1' as details array also contains detail for the opcode

@@ -110,11 +110,10 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   // Message to user
   const logPad = '-'.repeat(20);
   console.log(logPad);
-  console.log(`%cInitiating Application...`, 'color:lime;background:black;');
-  console.log(`%cCPU Model%c = %c${cpu.model}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Data Type%c = %c${cpuConfiguration.numType}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Memory Size%c = %c${cpuConfiguration.memory}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Registers%c = %c${cpuConfiguration.registerMap}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cNew Processor: %c${cpu.model}`, 'color:lime;background:black;', 'color:yellow;background:black;');
+  console.log(`%cCPU Data Type%c = %c${cpu.numType.type}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Memory Size%c = %c0x${utils.hex(cpu.memorySize)}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Registers%c = %c${Object.keys(cpuConfiguration.registerMap).length}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(logPad);
   withinState(globals.output, S => {
     S.reset();
@@ -145,9 +144,15 @@ function __app_main_() {
   });
 
   // Prompt user
-  tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
+  tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\n";
 
   globals.tabs._.open("code");
+
+  tabCode.properties.assemblyCodeInput.value = `
+INC eax
+INC xmm1
+hlt
+  `.trim();
 
   //   tabCode.properties.assemblyCodeInput.value = `
   // main:
@@ -171,5 +176,4 @@ window.addEventListener('load', () => {
 });
 
 // TODO:
-// - Type suffix on instruction only if flag is true
-// - Push numType as uint8 immediatly after instruction
+// Work on RS Processor
