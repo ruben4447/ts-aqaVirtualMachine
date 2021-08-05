@@ -77,7 +77,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
   for (let key in numberTypeMap) {
     if (numberTypeMap.hasOwnProperty(key) && !isNaN(+key)) {
       let selected = numberTypeMap[key] === view.type.type;
-      selectNType.insertAdjacentHTML('beforeend', `<option value='${key}'${selected?' selected="selected"':''}>${numberTypeMap[key]}</option>`);
+      selectNType.insertAdjacentHTML('beforeend', `<option value='${key}'${selected ? ' selected="selected"' : ''}>${numberTypeMap[key]}</option>`);
     }
   }
   selectNType.addEventListener("change", () => {
@@ -249,16 +249,17 @@ function generateRegisterViewHTML(): HTMLDivElement {
   let p = document.createElement("p");
   wrapper.appendChild(p);
   p.insertAdjacentHTML('beforeend', 'Register ');
-  const selectedRegister = (index: number) => {
-    const value = globals.cpu.readRegister(index);
+  const selectedRegister = (register: string) => {
+    const value = globals.cpu.readRegister(register);
     inputRegisterValue.value = value.toString(); // View decimal value
   };
   let selectRegister = document.createElement("select");
-  for (let i = 0; i < globals.cpu.registerMap.length; i++) {
-    const name = globals.cpu.registerMap[i];
-    selectRegister.insertAdjacentHTML('beforeend', `<option value='${i}'>${name}</option>`);
+  for (let register in globals.cpu.registerMap) {
+    if (globals.cpu.registerMap.hasOwnProperty(register)) {
+      selectRegister.insertAdjacentHTML('beforeend', `<option value='${register}'>${register}</option>`);
+    }
   }
-  selectRegister.addEventListener('change', () => selectedRegister(+selectRegister.value));
+  selectRegister.addEventListener('change', () => selectedRegister(selectRegister.value));
   p.appendChild(selectRegister);
   p.insertAdjacentHTML('beforeend', ' &equals; ');
   let inputRegisterValue = document.createElement("input");
@@ -268,27 +269,25 @@ function generateRegisterViewHTML(): HTMLDivElement {
   inputRegisterValue.addEventListener('change', () => {
     let value = +inputRegisterValue.value;
     if (!isNaN(value) && isFinite(value)) {
-      globals.cpu.writeRegister(+selectRegister.value, value);
-      if (+selectRegister.value === globals.cpu.registerMap.indexOf("ip")) globals.memoryView.update();
+      globals.cpu.writeRegister(selectRegister.value, value);
+      if (selectRegister.value === globals.cpu.regInstructionPtr) globals.memoryView.update();
     } else {
-      selectedRegister(+selectRegister.value); // Reset input
+      selectedRegister(selectRegister.value); // Reset input
     }
   });
   p.appendChild(inputRegisterValue);
 
-  // Reset registers
+  // Clear registers
   p = document.createElement("p");
   wrapper.appendChild(p);
   const btnClear = document.createElement("button");
   btnClear.innerText = 'Clear Registers';
   p.appendChild(btnClear);
   btnClear.addEventListener('click', () => {
-    for (let r = 0; r < globals.cpu.registerMap.length; r++) {
-      globals.cpu.writeRegister(r, 0);
-    }
+    for (let register in globals.cpu.registerMap) if (globals.cpu.registerMap.hasOwnProperty(register)) globals.cpu.writeRegister(register, 0);
   });
 
-  selectedRegister(0);
+  selectedRegister(Object.keys(globals.cpu.registerMap)[0]);
   wrapper.appendChild(viewWrapper);
 
   return wrapper;
@@ -312,7 +311,6 @@ export function init() {
   registerViewHTML.insertAdjacentHTML('afterbegin', `<h2>Registers</h2>`);
   flexContainer.appendChild(registerViewHTML);
 
-  const ipIndex = globals.cpu.registerMap.indexOf("ip");
   // Callbacks
   globals.cpu.onMemoryWrite((startAddress, endAddress) => {
     if (startAddress === endAddress) {
@@ -327,9 +325,9 @@ export function init() {
       }
     }
   });
-  globals.cpu.onRegisterWrite((index, value, cpu) => {
-    properties.registerView.update(index);
+  globals.cpu.onRegisterWrite((register, value, cpu) => {
+    properties.registerView.update(register);
     if (properties.updateMemoryViewOnMemoryWrite) properties.memoryView.update();
-    if (index === ipIndex) globals.tabs.run.instructionPointer.innerText = "0x" + hex(value);
+    if (register === globals.cpu.regInstructionPtr) globals.tabs.run.instructionPointer.innerText = "0x" + hex(value);
   });
 }

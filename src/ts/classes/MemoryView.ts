@@ -5,6 +5,7 @@ import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
 import globals from "../globals";
 import { INumberType, NumberType } from "../types/general";
+import { numberTypeToObject } from "../utils/CPU";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 
@@ -25,7 +26,7 @@ export class MemoryView {
       font.size = 11;
     });
     this.cpu = cpu;
-    this._type = getNumTypeInfo(cpu.displayDT);
+    this._type = numberTypeToObject["int8"];
 
     this._updateCache();
     this._render();
@@ -106,7 +107,7 @@ export class MemoryView {
     S.x = startX;
     S.y = this._cache.ySpacing;
     S.setForeground('lightgrey');
-    const ip = this.cpu.readRegister("ip");
+    const ip = this.cpu.readRegister(this.cpu.regInstructionPtr);
     // Address values
     for (let col = 0, addr = this._startAddr; col < this._cols; col++) {
       for (let row = 0; row < this._rows; row++, addr += this._type.bytes) {

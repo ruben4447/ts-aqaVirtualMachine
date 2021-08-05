@@ -3,7 +3,8 @@ import globals from "../globals";
 import { CPUModel } from "../types/CPU";
 import { NumberType } from "../types/general";
 import { ICPUTabProperties, ITabInfo } from "../types/Tabs";
-import { getMinMaxValues, numberToString, numericTypes, seperateNumber } from "../utils/general";
+import { numberTypeToObject } from "../utils/CPU";
+import { booleanToHTML, getMinMaxValues, numberToString, numericTypes, seperateNumber } from "../utils/general";
 import { __app_init_ } from "../_main";
 import { updateGUI } from "./memory";
 
@@ -130,36 +131,32 @@ function generateHTML(): HTMLDivElement {
   // Registers
   div = document.createElement("div");
   wrapper.appendChild(div);
-  div.insertAdjacentHTML('beforeend', '<h3>Registers (<small>' + globals.cpu.registerMap.length + '</small>)</h3>');
+  let maxRegOffset = -Infinity, highestRegister = '';
+  for (let reg in globals.cpu.registerMap)
+    if (globals.cpu.registerMap.hasOwnProperty(reg) && globals.cpu.registerMap[reg].offset > maxRegOffset) {
+      highestRegister = reg;
+      maxRegOffset = globals.cpu.registerMap[reg].offset;
+    }
+  let regBytes = globals.cpu.registerMap[highestRegister].offset + numberTypeToObject[globals.cpu.registerMap[highestRegister].type].bytes;
+  div.insertAdjacentHTML('beforeend', `<h3>Registers (<small>${Object.keys(globals.cpu.registerMap).length}</small>; ${regBytes} bytes)</h3>`);
   table = document.createElement('table');
   wrapper.appendChild(table);
+  table.insertAdjacentHTML(`beforeend`, `<thead><tr><th>Register</th><th>Type</th><th><abbr title='Offset (bytes) into register stack'>Offset</abbr></th><th><abbr title='Width of register in bits'>Size</abbr></th><th><abbr title='Save contents in stack frame upon function call'>Preserve</abbr></th><th>Description</th></tr></thead>`);
   tbody = document.createElement('tbody');
   table.appendChild(tbody);
 
-  tbody.insertAdjacentHTML('beforeend', `<th>Registers</th><td><strong>${globals.cpu.registerMap.length}</strong>: ${globals.cpu.registerMap.map(x => '\'' + x + '\'').join(', ')}</td>`);
-  tr = document.createElement('tr');
-  tbody.appendChild(tr);
-  td = document.createElement('td');
-  tr.appendChild(td);
-  const inputNewRegister = document.createElement('input');
-  inputNewRegister.type = "text";
-  inputNewRegister.minLength = 2;
-  inputNewRegister.maxLength = 6;
-  inputNewRegister.placeholder = 'Register';
-  td.appendChild(inputNewRegister);
-  tr.insertAdjacentHTML('afterbegin', `<th><abbr title='Must be a unique name and between ${inputNewRegister.minLength}-${inputNewRegister.maxLength} characters. Must not contain spaces, or start with a number.'>New Register</abbr></th>`);
-  const btnCreateRegister = document.createElement('button');
-  btnCreateRegister.innerText = '+';
-  td.appendChild(btnCreateRegister);
-  btnCreateRegister.addEventListener('click', () => {
-    let name = inputNewRegister.value;
-    if (name.length < +inputNewRegister.minLength || name.length > +inputNewRegister.maxLength || globals.cpu.registerMap.indexOf(name) !== -1 || name.match(/\s/) || !isNaN(parseInt(name[0]))) {
-      new Popup('Invalid Register Name').insertAdjacentText('beforeend', `The inputted register name is invalid. Check: is it too long/short, or does it already exist?`).show();
-      inputNewRegister.value = '';
-    } else {
-      updateCPU(undefined, undefined, undefined, [...globals.cpu.registerMap, name]);
+  for (let register in globals.cpu.registerMap) {
+    if (globals.cpu.registerMap.hasOwnProperty(register)) {
+      const tr = document.createElement('tr'), meta = globals.cpu.registerMap[register];
+      tr.insertAdjacentHTML(`beforeend`, `<th>${register}</th>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td>${meta.type}</td>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td>${meta.offset}</td>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td>${numberTypeToObject[meta.type].bytes * 8}</td>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td>${booleanToHTML(meta.preserve)}</td>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td><small><em>${meta.desc ?? 'N/A'}</em></small></td>`);
+      tbody.appendChild(tr);
     }
-  });
+  }
 
   // Options
   div = document.createElement("div");
@@ -264,12 +261,9 @@ function updateCPU(model?: CPUModel, numType?: NumberType, memorySize?: number, 
   if (model === undefined) model = globals.cpu.model;
   if (numType === undefined) numType = globals.cpu.numType.type;
   if (memorySize === undefined) memorySize = globals.cpu.memorySize;
-  if (registerMap === undefined) registerMap = globals.cpu.registerMap;
   __app_init_(model, {
-    instructionSet: globals.cpu.instructionSet,
     numType: numType,
     memory: memorySize,
-    registerMap,
   });
 
   globals.tabs._.open("cpu");

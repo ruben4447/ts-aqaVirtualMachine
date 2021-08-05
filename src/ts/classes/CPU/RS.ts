@@ -6,16 +6,14 @@ import { CMP, compare, numberTypeMap, numberTypeToObject } from "../../utils/CPU
 import { getNumTypeInfo, getTextMetrics } from "../../utils/general";
 
 export class RSProcessor extends CPU {
-    public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
+    public static readonly defaultRegisters: string[] = [];
     public static readonly defaultNumType: NumberType = 'float32';
-    public static readonly requiredRegisters: string[] = ["ip", "sp", "fp", "acc", "cmp"];
+    public static readonly requiredRegisters: string[] = [];
     public readonly model: CPUModel = CPUModel.RS;
 
-    protected readonly _acc: number; // Index of accumulator register
 
     public constructor(config: ICPUConfiguration) {
         super(instructionSet, config, RSProcessor.defaultRegisters, RSProcessor.defaultNumType, RSProcessor.requiredRegisters);
-        this._acc = this.registerMap.indexOf('acc');
 
         const uint8 = getNumTypeInfo("uint8");
         this.instructType = uint8;

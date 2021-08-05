@@ -21,6 +21,7 @@ import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
+import { createRegister } from "./utils/CPU";
 globalThis.utils = utils;
 
 /**
@@ -139,7 +140,7 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.RS, {
+  __app_init_(CPUModel.AQAARMExt, {
     numType: 'int16',
   });
 
@@ -149,23 +150,31 @@ function __app_main_() {
   globals.tabs._.open("code");
 
   tabCode.properties.assemblyCodeInput.value = `
-movi32 r8, r1
-hlt
+MOV r1, #05 ; Number to find factorial of
+MOV r7, r1  ; Set result to initial number
+
+loop:
+SUB r1, r1, #1 ; r1--
+MUL r7, r7, r1 ; r7 *= r1
+CMP r1, #2 ; Compare with #2 as no need to multiply by 1, and avoid multiplying by 0
+BGT loop
+
+HALT
   `.trim();
 
-//   tabCode.properties.assemblyCodeInput.value = `
-// main:
-//   push #5     ; Push 5 as argument
-//   push #1     ; Push number of arguments
-//   call square
-//   hlt
+  //   tabCode.properties.assemblyCodeInput.value = `
+  // main:
+  //   push #5     ; Push 5 as argument
+  //   push #1     ; Push number of arguments
+  //   call square
+  //   hlt
 
-// square:
-//   add sp, #12     ; Adjust to location of argument
-//   mov acc, *acc
-//   mul acc, acc
-//   ret
-//   `.trim();
+  // square:
+  //   add sp, #12     ; Adjust to location of argument
+  //   mov acc, *acc
+  //   mul acc, acc
+  //   ret
+  //   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
 }

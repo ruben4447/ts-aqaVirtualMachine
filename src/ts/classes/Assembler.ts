@@ -88,7 +88,8 @@ export class Assembler {
   public getAssemblyCode(): string { return this._assembly; }
   public getAST(): IAssemblyLine[] | undefined { return this._ast; }
   public getBytes(): ArrayBuffer | undefined { return this._bytes; }
-  public getLabels() { return Object.keys(this._labels); }
+  public getLabels(): [string, number][] { return Array.from(this._labels.entries()); }
+  public getSymbols(): [string, string][] { return Array.from(this._symbols.entries()); }
   public getLabel(label: string): number | undefined { return this._labels.get(label); }
 
   /**
@@ -399,11 +400,11 @@ export class Assembler {
       token.num = num;
       return token;
     } else {
-      const registerIndex = this._cpu.registerMap.indexOf(argument.toLowerCase());
-      if (!isNaN(registerIndex) && registerIndex !== -1) {
+      const registerMeta = this._cpu.registerMap[argument.toLowerCase()];
+      if (registerMeta) {
         // Register
         token.type = AssemblerType.Register;
-        token.num = registerIndex;
+        token.num = registerMeta.offset;
         token.ntype = this._cpu.regType.type;
       } else {
         // Extract address from argument

@@ -19,11 +19,12 @@ export interface IReversedCPUInstructionSet {
 export interface ICPUConfiguration {
   numType?: NumberType; // What numerical type memory operates in
   memory?: number; // Memory size
-  registerMap?: string[]; // Register map. The CPU will as the required registers if they aren't present
+  registerMap?: { [reg: string]: IRegisterInfo }; // Register map. The CPU will as the required registers if they aren't present
+  appendRegisterMap?: { [reg: string]: IRegisterInfo }; // Append registers. Note that <offset> field is ignored
 }
 
 export type MemoryWriteCallback = (startAddress: number, endAddress: number, cpu: CPU) => void;
-export type RegisterWriteCallback = (index: number, value: number, cpu: CPU) => void;
+export type RegisterWriteCallback = (name: string, value: number, cpu: CPU) => void;
 
 export interface IExecuteRecord {
   ip: number; // Instruction pointer value when command was run
@@ -56,6 +57,13 @@ export function createCPUExecutionConfigObject(): ICPUExecutionConfig {
     detail: true,
     commentary: true,
   };
+}
+
+export interface IRegisterInfo {
+  offset: number; // Byte offset in ArrayBuffer
+  type: NumberType; // Numeric type of register
+  preserve: boolean; // Save to call stack in function calls
+  desc?: string; // Description?
 }
 
 // export interface IFlagMasks {

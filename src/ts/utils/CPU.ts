@@ -1,5 +1,6 @@
 import { IInstructionSet } from "../types/Assembler";
-import { ICPUInstructionSet } from "../types/CPU";
+import { ICPUInstructionSet, IRegisterInfo } from "../types/CPU";
+import { NumberType } from "../types/general";
 import { createEnum, getNumTypeInfo, hex } from "./general";
 
 /** Comparison results. Note, no negative numbers to support unsigned data types. */
@@ -54,3 +55,6 @@ for (let key in numberTypeMap) {
     numberTypeToObject[key] = getNumTypeInfo(key as any);
   }
 }
+
+/** Create register object */
+export const createRegister = (offset: number, type: NumberType, preserve: boolean, desc?: string): IRegisterInfo => ({ offset, type, preserve, desc });

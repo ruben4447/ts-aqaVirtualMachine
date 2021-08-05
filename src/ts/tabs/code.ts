@@ -18,6 +18,7 @@ export const properties: ICodeTabProperties = {
   partailTranslationWrapper: undefined,
   partialTranslatedInput: undefined,
   labelTable: undefined,
+  symbolTable: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
   insertHalt: true,
@@ -50,7 +51,7 @@ function generateAssemblyHTML(): HTMLDivElement {
     textarea.value = text;
     inputUpload.value = ''; // Clear files
   });
-  
+
   let inputUploadBtn = document.createElement('button');
   inputUploadBtn.insertAdjacentHTML('beforeend', `<img src='http://bluecedars1.dyndns.org/icons/up.png' /> Upload File`);
   inputUploadBtn.addEventListener('click', () => inputUpload.click());
@@ -111,7 +112,7 @@ function generatePartialHTML() {
   wrapper.appendChild(table);
   let tr = document.createElement('tr');
   table.appendChild(tr);
-  
+
   // Text input
   let td = document.createElement('td');
   tr.appendChild(td);
@@ -121,7 +122,7 @@ function generatePartialHTML() {
   textarea.readOnly = true;
   textarea.rows = 10;
   textarea.cols = 100;
-  
+
   // Label table
   td = document.createElement('td');
   tr.appendChild(td);
@@ -130,19 +131,33 @@ function generatePartialHTML() {
   labelTable.insertAdjacentHTML('beforeend', `<thead><tr><th>Label</th><th>Address</th></tr></thead>`);
   const labelTbody = document.createElement("tbody");
   labelTable.appendChild(labelTbody);
-
   properties.labelTable = labelTbody;
-  
+
+  // Symbol table
+  td = document.createElement('td');
+  tr.appendChild(td);
+  const symbolTable = document.createElement("table");
+  td.appendChild(symbolTable);
+  symbolTable.insertAdjacentHTML('beforeend', `<thead><tr><th>Symbol</th><th>Value</th></tr></thead>`);
+  const symbolTbody = document.createElement("tbody");
+  symbolTable.appendChild(symbolTbody);
+  properties.symbolTable = symbolTbody;
+
   return wrapper;
 }
 
 function updateLabelTable() {
   properties.labelTable.innerHTML = '';
-  const labels = globals.assembler.getLabels();
-  for (const label of labels) {
-    const addr = globals.assembler.getLabel(label);
-    properties.labelTable.insertAdjacentHTML('beforeend', `<tr><th>${label}</th><td><code>0x${globals.cpu.toHex(addr)}</code></td></tr>`);
-  }
+  globals.assembler.getLabels().forEach(([label, addr]) => {
+    properties.labelTable.insertAdjacentHTML('beforeend', `<tr><th>${label}</th><td><code>0x${addr.toString(16)}</code></td></tr>`);
+  });
+}
+
+function updateSymbolTable() {
+  properties.symbolTable.innerHTML = '';
+  globals.assembler.getSymbols().forEach(([symbol, value]) => {
+    properties.symbolTable.insertAdjacentHTML('beforeend', `<tr><th><small>${symbol}</small></th><td><code><small>${value}</small></code></td></tr>`);
+  })
 }
 
 function generateBinaryHTML(): HTMLDivElement {
@@ -317,6 +332,7 @@ export function decompileMachineCode() {
 
 function displayPartialTranslation() {
   updateLabelTable();
+  updateSymbolTable();
   const lines = globals.assembler.getAST();
   const type = t => globals.cpu.instructTypeSuffixes ? `(${numericTypesAbbrEnum[t]})` : '';
   let text = '', itype = globals.cpu.instructType.type;
@@ -349,7 +365,7 @@ function displayMachineCode() {
 export function loadMachineCodeToMemory(startAddress?: number) {
   if (startAddress === undefined) startAddress = 0;
   if (properties.machineCode instanceof ArrayBuffer) {
-    let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode, numberTypeToObject["uint8"]);
+    let endAddress = globals.cpu.loadMemoryBytes(startAddress, properties.machineCode);
 
     withinState(globals.output, S => {
       S.reset();

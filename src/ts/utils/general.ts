@@ -363,3 +363,7 @@ export function objectGroupBy<T>(o: T, groupByKey: string): { [group: string]: T
   }
   return grouped;
 }
+
+export function booleanToHTML(bool: boolean): string {
+  return bool ? `<span style='color:forestgreen;font-weight:bold;'>Yes</span>` : `<span style='color:tomato;'>No</span>`;
+}

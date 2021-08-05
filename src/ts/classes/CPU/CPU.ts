@@ -1,7 +1,7 @@
 import { IInstructionSet } from "../../types/Assembler";
-import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../../types/CPU";
+import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IRegisterInfo, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../../types/CPU";
 import { INumberType, NumberType } from "../../types/general";
-import { generateCPUInstructionSet } from "../../utils/CPU";
+import { createRegister, generateCPUInstructionSet, numberTypeToObject } from "../../utils/CPU";
 import { getNumTypeInfo, numberToString, reverseKeyValues } from "../../utils/general";
 
 export class CPUError extends Error {
@@ -11,54 +11,71 @@ export class CPUError extends Error {
 }
 
 export class CPU {
-  public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"];
   public static readonly defaultNumType: NumberType = 'float32';
-  public static readonly requiredRegisters: string[] = ["ip", "sp", "fp"];
 
   public readonly model: CPUModel = undefined; // NO MODEL
   public readonly instructionSet: ICPUInstructionSet;
-  public readonly registerMap: string[]; // Map register names to index positions
+  public registerMap: { [reg: string]: IRegisterInfo }; // Map register names to index positions
   public readonly memorySize: number;
   public readonly numType: INumberType;
   public executionConfig: ICPUExecutionConfig;
-  public displayDT: NumberType; // MemoryView
   public instructType: INumberType; // Data type of instructions
   public regType: INumberType; // Date type of registers
   public instructTypeSuffixes: boolean = false; // Do instructions first argument contain a type?
-  
-  protected readonly _generalRegisters: string[];
-  protected readonly reversedInstructionSet: IReversedCPUInstructionSet;
-  protected readonly __registers: ArrayBuffer;
-  protected readonly _registers: DataView;
-  protected readonly _ip: number; // As the Instruction Pointer is needed so often, this stord the index of IP in the register ArrayBuffer
-  protected readonly __memory: ArrayBuffer;
-  protected readonly _memory: DataView;
+  public regStackPtr: string = 'sp'; // Name of register which contains stack pointer
+  public regInstructionPtr: string = 'ip'; // Name of register which contains instruction pointer
+  public regFramePtr: string = 'fp'; // Name of register which contains frame pointer
+
+  protected reversedInstructionSet: IReversedCPUInstructionSet;
+  protected __registers: ArrayBuffer;
+  protected _registers: DataView;
+  protected _preserveRegisters: string[]; // Array of registers to preserve. All should be preserve: true in registerMap.
+  protected _registerOffsets: { [offset: number]: string }; // Map register offsets to their names
+  protected __memory: ArrayBuffer;
+  protected _memory: DataView;
   protected _callbackMemoryWrite: MemoryWriteCallback;
   protected _callbackRegisterWrite: RegisterWriteCallback;
   protected _stackFrameSize = 0; // Size (in bytes) of latest stack frame
 
-  constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultRegisters = CPU.defaultRegisters, defaultNumType = CPU.defaultNumType, requiredRegisters = []) {
+  constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultNumType = CPU.defaultNumType) {
     this.instructionSet = generateCPUInstructionSet(instructionSet);
     this.reversedInstructionSet = reverseKeyValues(this.instructionSet);
 
     this.numType = getNumTypeInfo(config.numType ?? defaultNumType);
-    this.displayDT = "int8"; // this.numType.type;
     this.instructType = this.numType;
     this.regType = this.numType;
 
-    this.registerMap = config.registerMap || defaultRegisters;
-    requiredRegisters = Array.from(new Set(CPU.requiredRegisters.concat(requiredRegisters)));
-    for (const requiredRegister of requiredRegisters)
-      if (this.registerMap.indexOf(requiredRegister) === -1)
-        this.registerMap.push(requiredRegister);
-    this._generalRegisters = this.registerMap.filter(r => r[0] === 'r');
+    if (config.registerMap) {
+      this.registerMap = config.registerMap;
+    } else {
+      this.registerMap = {};
+      let roff = 0;
+      this.registerMap[this.regInstructionPtr] = createRegister(0, 'int64', true, 'Instruction pointer (points to current instruction)');
+      this.registerMap[this.regStackPtr] = createRegister(8, 'int64', false, 'Stack pointer (top of stack)');
+      this.registerMap[this.regFramePtr] = createRegister(16, 'int64', false, 'Stack frame pointer (points to top of current stack frame)');
+      roff = 24;
+      for (let i = 0; i < 8; i++, roff += 8)
+        this.registerMap['r' + i] = createRegister(roff, 'float64', true);
+    }
 
-    this._ip = this.registerMap.indexOf("ip");
-    this.__registers = new ArrayBuffer(this.registerMap.length * this.numType.bytes);
+    let regBytes = 0;
+    for (let reg in this.registerMap) if (this.registerMap.hasOwnProperty(reg)) regBytes += numberTypeToObject[this.registerMap[reg].type].bytes;
+    if (config.appendRegisterMap) {
+      for (let reg in config.appendRegisterMap) {
+        if (config.appendRegisterMap.hasOwnProperty(reg)) {
+          this.registerMap[reg] = config.appendRegisterMap[reg];
+          this.registerMap[reg].offset = regBytes;
+          regBytes += numberTypeToObject[config.appendRegisterMap[reg].type].bytes;
+        }
+      }
+    }
+
+    this._updateRegisteCaches();
+    this.__registers = new ArrayBuffer(regBytes);
     this._registers = new DataView(this.__registers);
 
-    this.memorySize = config.memory || 0xFFF;
-    this.__memory = new ArrayBuffer(this.memorySize * this.numType.bytes);
+    this.memorySize = config.memory || 0xFFFFFF; // 24-bits, 16MB
+    this.__memory = new ArrayBuffer(this.memorySize);
     this._memory = new DataView(this.__memory);
 
     this.resetRegisters();
@@ -69,34 +86,39 @@ export class CPU {
   public getMnemonic(opcode: number): string { return this.reversedInstructionSet[opcode]; }
 
   // #region Registers
+  /** Update this._preserveRegisters and this._registerOffsets */
+  protected _updateRegisteCaches() {
+    this._preserveRegisters = Object.entries(this.registerMap).filter(([reg, meta]) => meta.preserve).map(([reg, meta]) => reg);
+    this._registerOffsets = Object.fromEntries(Object.entries(this.registerMap).map(([reg, meta]) => ([meta.offset, reg])));
+  }
+
+  /** Get register name from an offset */
+  public registerFromOffset(offset: number) {
+    return this._registerOffsets[offset];
+  }
+
   /** Reset reisters to initial values */
-  resetRegisters() {
-    this.writeRegister("ip", 0);
-    this.writeRegister('sp', this.memorySize - 1); // Stack pointer
-    this.writeRegister('fp', this.memorySize - 1); // Frame pointer
+  public resetRegisters() {
+    this.writeRegister(this.regInstructionPtr, 0);
+    this.writeRegister(this.regStackPtr, this.memorySize - 1); // Stack pointer
+    this.writeRegister(this.regFramePtr, this.memorySize - 1); // Frame pointer
   }
 
-  /** Get index of register in register array. Return NaN is does not exist. */
-  public getRegisterIndexFromName(name: string): number {
-    const index = this.registerMap.indexOf(name);
-    return index == -1 ? NaN : index;
+  /** Read value of given register (of register at given byteOffset). */
+  public readRegister(register: string | number): number {
+    if (typeof register === 'number') register = this.registerFromOffset(register);
+    if (!(register in this.registerMap)) throw new Error(`SIGABRT - Unknown register ${register} in READ operation`);
+    const meta = this.registerMap[register];
+    return this._registers[numberTypeToObject[meta.type].getMethod](meta.offset);
   }
 
-  /** Read value of register at said index. Register index is always multiplied by this.numType. */
-  public readRegister(register: number | string, numType?: INumberType): number {
-    numType = numType ?? this.numType;
-    let index = typeof register === 'string' ? this.registerMap.indexOf(register) : Math.floor(register);
-    if (isNaN(index) || index === -1) throw new Error(`readRegister: invalid argument provided '${register}'`);
-    return this._registers[numType.getMethod](index * this.numType.bytes);
-  }
-  
-  /** Write value to register at said index */
-  public writeRegister(register: number | string, value: number, numType?: INumberType): void {
-    numType = numType ?? this.numType;
-    let index = typeof register === 'string' ? this.registerMap.indexOf(register) : Math.floor(register);
-    if (isNaN(index) || index === -1) throw new Error(`writeRegister: invalid argument provided '${register}'`);
-    this._registers[numType.setMethod](index * this.numType.bytes, value);
-    if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(index, value, this);
+  /** Write value to given register (if number, this is the registers' offset) */
+  public writeRegister(register: string | number, value: number): number {
+    if (typeof register === 'number') register = this.registerFromOffset(register);
+    if (!(register in this.registerMap)) throw new Error(`SIGABRT - Unknown register ${register} in WRITE operation`);
+    const meta = this.registerMap[register];
+    if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(register, value, this);
+    return this._registers[numberTypeToObject[meta.type].setMethod](meta.offset, value);
   }
 
   // #endregion
@@ -221,39 +243,45 @@ export class CPU {
 
   // Push stack frame
   public pushFrame() {
-    for (let i = 0; i < this._generalRegisters.length; i++) this.push(this.readRegister(this._generalRegisters[i])); // Store general purpose registers
-    this.push(this.readRegister("ip"));
-    this.push(this._stackFrameSize + 1); // Record stack frame size
-    this.writeRegister("fp", this.readRegister("sp"));
+    // for (let i = 0; i < this._generalRegisters.length; i++) this.push(this.readRegister(this._generalRegisters[i])); // Store general purpose registers
+    for (let i = 0; i < this._preserveRegisters.length; i++) {
+      let rname = this._preserveRegisters[i];
+      this.push(this.readRegister(rname), numberTypeToObject[this.registerMap[rname].type]);
+    }
+
+    this.push(this.readRegister(this.regInstructionPtr), numberTypeToObject[this.registerMap[this.regInstructionPtr].type]); // Instruction Pointer
+    this.push(this._stackFrameSize + 1, numberTypeToObject["uint32"]); // Record stack frame size
+    this.writeRegister(this.regFramePtr, this.readRegister(this.regStackPtr));
     this._stackFrameSize = 0;
   }
 
   // Pop stack frame
   public popFrame() {
-    const fpAddr = this.readRegister("fp");
-    this.writeRegister("sp", fpAddr);
+    const fpAddr = this.readRegister(this.regFramePtr);
+    this.writeRegister(this.regStackPtr, fpAddr);
 
-    const sfs = this.pop();
+    const sfs = this.pop(numberTypeToObject["uint32"]);
     this._stackFrameSize = sfs;
 
     // Pop all stored registers
-    this.writeRegister("ip", this.pop());
-    for (let i = this._generalRegisters.length - 1; i >= 0; i--) this.writeRegister(this._generalRegisters[i], this.pop());
+    this.writeRegister(this.regInstructionPtr, this.pop(numberTypeToObject[this.registerMap[this.regInstructionPtr].type]));
+    for (let i = this._preserveRegisters.length - 1; i >= 0; i--) {
+      let rname = this._preserveRegisters[i];
+      this.writeRegister(rname, this.pop(numberTypeToObject[this.registerMap[rname].type]));
+    }
     // Pop subroutine args
-    console.log("BEFORE NARGS");
-    const nArgs = this.pop();
-    console.log("NARGS:", nArgs)
-    for (let i = 0; i < nArgs; i++) this.pop();
+    const argBytes = this.pop(numberTypeToObject["uint32"]);
+    for (let i = 0; i < argBytes; i++) this.pop(numberTypeToObject["int8"]);
     // Reset frame pointer
-    this.writeRegister("fp", fpAddr + sfs);
+    this.writeRegister(this.regFramePtr, fpAddr + sfs);
   }
 
   /** Get next word in memory, and increment IP */
   public fetch(numType?: INumberType): number {
     numType = numType ?? this.numType;
-    const ip = this.readRegister(this._ip, numType);
+    const ip = this.readRegister(this.regInstructionPtr);
     const word = this.readMemory(ip, numType);
-    this.writeRegister(this._ip, ip + numType.bytes);
+    this.writeRegister(this.regInstructionPtr, ip + numType.bytes);
     return word;
   }
 
@@ -264,7 +292,7 @@ export class CPU {
 
   /** One fetch-execute cycle. Return whether to continue or not. */
   public cycle(info: IExecuteRecord): boolean {
-    const ip = this.readRegister(this._ip);
+    const ip = this.readRegister(this.regInstructionPtr);
     info.ip = ip;
     try {
       let opcode: number;
@@ -299,6 +327,41 @@ export class CPU {
   _throwUnknownOpcode(opcode) {
     throw new Error(`[SIGILL] illegal instruction 0x${opcode.toString(16)}`);
   }
+
+  /** Add "realistic" registers to a CPU */
+  setAdvRegisters() {
+    const R = createRegister;
+    let roff = 0;
+    this.registerMap = {
+      rax: R(0 + 0, "int64", false), eax: R(0 + 4, "int32", false), ax: R(0 + 6, "int16", false), al: R(0 + 7, "int8", false), // ACCUMULATOR
+      rbx: R(8 + 0, "int64", true), ebx: R(8 + 4, "int32", true), bx: R(8 + 6, "int16", true), bl: R(8 + 7, "int8", true),
+      rcx: R(16 + 0, "int64", false), ecx: R(16 + 4, "int32", false), cx: R(16 + 6, "int16", false), cl: R(16 + 7, "int8", false),
+      rdx: R(24 + 0, "int64", false), edx: R(24 + 4, "int32", false), dx: R(24 + 6, "int16", false), dl: R(24 + 7, "int8", false),
+      rsp: R(32 + 0, "int64", true), esx: R(32 + 4, "int32", true), sp: R(32 + 6, "int16", true), spl: R(32 + 7, "int8", true), // STACK POINTER
+      rbp: R(40 + 0, "int64", true), ebp: R(40 + 4, "int32", true), bp: R(40 + 6, "int16", true), bpl: R(40 + 7, "int8", true), // FRAME (BASE) POINTER
+      rsi: R(48 + 0, "int64", false), esi: R(48 + 4, "int32", false), si: R(48 + 6, "int16", false), sil: R(48 + 7, "int8", false),
+      rdi: R(56 + 0, "int64", false), edi: R(56 + 4, "int32", false), di: R(56 + 6, "int16", false), dil: R(56 + 7, "int8", false),
+      r8: R(64 + 0, "int64", false), r8d: R(64 + 4, "int32", false), r8w: R(64 + 6, "int16", false), r8b: R(64 + 7, "int8", false),
+      r9: R(72 + 0, "int64", false), r9d: R(72 + 4, "int32", false), r9w: R(72 + 6, "int16", false), r9b: R(72 + 7, "int8", false),
+      r10: R(80 + 0, "int64", false), r10d: R(80 + 4, "int32", false), r10w: R(80 + 6, "int16", false), r10b: R(80 + 7, "int8", false),
+      r11: R(88 + 0, "int64", false), r11d: R(88 + 4, "int32", false), r11w: R(88 + 6, "int16", false), r11b: R(88 + 7, "int8", false),
+      r12: R(96 + 0, "int64", true), r12d: R(96 + 4, "int32", true), r12w: R(96 + 6, "int16", true), r12b: R(96 + 7, "int8", true),
+      r13: R(104 + 0, "int64", true), r13d: R(104 + 4, "int32", true), r13w: R(104 + 6, "int16", true), r13b: R(104 + 7, "int8", true),
+      r14: R(112 + 0, "int64", true), r14d: R(112 + 4, "int32", true), r14w: R(112 + 6, "int16", true), r14b: R(112 + 7, "int8", true),
+      r15: R(120 + 0, "int64", true), r15d: R(120 + 4, "int32", true), r15w: R(120 + 6, "int16", true), r15b: R(120 + 7, "int8", true),
+      rip: R(128 + 0, "int64", true), eip: R(128 + 4, "int32", true), ip: R(128 + 6, "int16", true), // Instruction pointer
+      rflags: R(136 + 0, "int64", false), eflags: R(136 + 4, "int32", false), flags: R(136 + 6, "int16", false), // Contains flags
+    }
+    roff = 144;
+    for (let i = 0; i <= 31; i++, roff += 8)
+      this.registerMap['xmm' + i] = R(roff, "float64", false);
+    for (let i = 0; i <= 7; i++, roff += 8)
+      this.registerMap['mm' + i] = R(roff, "float64", false);
+    this.__registers = new ArrayBuffer(roff);
+    this._registers = new DataView(this.__registers);
+  }
 }
+
+
 
 export default CPU;

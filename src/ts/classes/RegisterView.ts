@@ -1,3 +1,4 @@
+import { numberTypeToObject } from "../utils/CPU";
 import { numberToString } from "../utils/general";
 import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
@@ -30,9 +31,9 @@ export class RegisterView {
     const S = this.screen;
     S.clear();
 
-    const ySpacing = this.screen.getHeight() / this.cpu.registerMap.length;
+    const ySpacing = this.screen.getHeight() / Object.keys(this.cpu.registerMap).length;
     let longestRegisterName = "";
-    for (const register of this.cpu.registerMap)
+    for (const register in this.cpu.registerMap)
       if (register.length > longestRegisterName.length) longestRegisterName = register;
     const registerNameLabelDimensions = S.measureText(longestRegisterName);
     const labelPad = 10;
@@ -47,7 +48,7 @@ export class RegisterView {
     S.setForeground("lime");
     S.x = labelPad;
     S.y = startY;
-    for (const register of this.cpu.registerMap) {
+    for (const register in this.cpu.registerMap) {
       S.writeString(register, false);
       S.y += ySpacing;
     }
@@ -57,15 +58,16 @@ export class RegisterView {
     const usedSpace = registerNameLabelDimensions.width + 2 * labelPad;
     S.x = usedSpace;
     S.y = startY;
-    for (let i = 0; i < this.cpu.registerMap.length; i++) {
-      const value = this.cpu.readRegister(i);
-      let text = numberToString(this.cpu.numType, value, this._base);
+
+    for (let register in this.cpu.registerMap) {
+      const value = this.cpu.readRegister(register);
+      let text = numberToString(numberTypeToObject[this.cpu.registerMap[register].type], value, this._base);
       S.writeString(text, false);
       S.y += ySpacing;
     }
   }
 
-  public update(registerIndex?: number) {
+  public update(register?: string) {
     this._render();
   }
 }

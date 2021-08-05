@@ -21,6 +21,7 @@ export interface ICodeTabProperties {
   partailTranslationWrapper: HTMLDivElement;
   partialTranslatedInput: HTMLTextAreaElement;
   labelTable: HTMLTableSectionElement;
+  symbolTable: HTMLTableSectionElement;
   machineCode: ArrayBuffer;
   machineCodeInput: HTMLTextAreaElement;
   insertHalt: boolean;

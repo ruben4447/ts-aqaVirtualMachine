@@ -35,8 +35,8 @@ Upon error, an `AssemblerError` will be thrown at the various stage, and be caug
 All CPUs (unless states) share common stack frame structures and calling conventions.
 
 A new stack frame is created on a call to `cal` and has the following structure:
-- `size of stack frame`
-- `return address` - address where IP is set to upon `ret`
-- `...general purpose registers` - general purpose registers are preserved on the stack, and are any regieter prefixes by an `r` e.g. `r1`, `r5`
-- `argc` - argument count to subroutine. [**PUSHED BY USER**]
+- `size of stack frame -> uint32`
+- `return address -> (sizeof IP register)` - address where IP is set to upon `ret`
+- `...registers` - registers that are marked `preserve: true`
+- `argc -> uint32` - argument count to subroutine, in bytes [**PUSHED BY USER**]
 - `...argv` - sequence of `argc` values acting as arguments. [**PUSHED BY USER**]

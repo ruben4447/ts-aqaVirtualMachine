@@ -1,24 +1,22 @@
 import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
 import { NumberType } from "../../types/general";
 import { arrayToBuffer, hex } from "../../utils/general";
-import { CMP, compare } from '../../utils/CPU';
+import { CMP, compare, createRegister } from '../../utils/CPU';
 import CPU from "./CPU";
 import { instructionSet as aqaInstructionSet } from '../../instruction-set/aqa-arm';
 import { IInstructionSet } from "../../types/Assembler";
 
 export class ARMProcessor extends CPU {
-  public static readonly defaultRegisters: string[] = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"];
   public static readonly defaultNumType: NumberType = 'float32';
-  public static readonly requiredRegisters: string[] = ["cmp"];
   public readonly model: CPUModel = CPUModel.AQAARM;
 
   /** Instruction set defaults to AQA arm; present only for overloading purposes */
   constructor(config: ICPUConfiguration, instructionSet?: IInstructionSet) {
     // Call super's constructor, but wih our defaults
-    super(instructionSet ?? aqaInstructionSet, config, ARMProcessor.defaultRegisters, ARMProcessor.defaultNumType, ARMProcessor.requiredRegisters);
+    config.appendRegisterMap = { ...config.appendRegisterMap, cmp: createRegister(16, 'int64', false, 'Stack frame pointer (points to top of current stack frame)') };
+    super(instructionSet ?? aqaInstructionSet, config, ARMProcessor.defaultNumType);
   }
 
-  /** @override */
   public execute(opcode: number, info: IExecuteRecord): boolean {
     let continueExec = true;
 
@@ -431,7 +429,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to 0x${this.toHex(constant)}`;
         }
-        this.writeRegister(this._ip, constant);
+        this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
       case this.instructionSet.JMP_REG: {
@@ -441,7 +439,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)})`;
         }
-        this.writeRegister(this._ip, registerVal);
+        this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
       case this.instructionSet.JEQ_CONST: {
@@ -452,7 +450,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'equal to' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, constant);
+        if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
       case this.instructionSet.JEG_REG: {
@@ -463,7 +461,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'equal to' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, registerVal);
+        if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
       case this.instructionSet.JNE_CONST: {
@@ -474,7 +472,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'not equal to' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, constant);
+        if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
       case this.instructionSet.JNE_REG: {
@@ -485,7 +483,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'not equal to' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, registerVal);
+        if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
       case this.instructionSet.JLT_CONST: {
@@ -496,7 +494,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'less than' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, constant);
+        if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
       case this.instructionSet.JLT_REG: {
@@ -507,7 +505,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'less than' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, registerVal);
+        if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
       case this.instructionSet.JGT_CONST: {
@@ -518,7 +516,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to 0x${this.toHex(constant)} if 'greater than' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, constant);
+        if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
       case this.instructionSet.JGT_REG: {
@@ -529,7 +527,7 @@ export class ARMProcessor extends CPU {
         if (this.executionConfig.commentary) {
           info.text = `Set instruction pointer to register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) if 'greater than' --> ${condition.toString().toUpperCase()}`;
         }
-        if (condition) this.writeRegister(this._ip, registerVal);
+        if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
       default:
