@@ -1,8 +1,8 @@
 import { IInstructionSet } from "../../types/Assembler";
 import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IRegisterInfo, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../../types/CPU";
 import { INumberType, NumberType } from "../../types/general";
-import { createRegister, generateCPUInstructionSet, numberTypeToObject } from "../../utils/CPU";
-import { getNumTypeInfo, numberToString, reverseKeyValues } from "../../utils/general";
+import { createRegister, generateCPUInstructionSet } from "../../utils/CPU";
+import { getNumTypeInfo, numberToString, reverseKeyValues, numericTypeToObject } from "../../utils/general";
 
 export class CPUError extends Error {
   constructor(message: string) {
@@ -59,13 +59,13 @@ export class CPU {
     }
 
     let regBytes = 0;
-    for (let reg in this.registerMap) if (this.registerMap.hasOwnProperty(reg)) regBytes += numberTypeToObject[this.registerMap[reg].type].bytes;
+    for (let reg in this.registerMap) if (this.registerMap.hasOwnProperty(reg)) regBytes += numericTypeToObject[this.registerMap[reg].type].bytes;
     if (config.appendRegisterMap) {
       for (let reg in config.appendRegisterMap) {
         if (config.appendRegisterMap.hasOwnProperty(reg)) {
           this.registerMap[reg] = config.appendRegisterMap[reg];
           this.registerMap[reg].offset = regBytes;
-          regBytes += numberTypeToObject[config.appendRegisterMap[reg].type].bytes;
+          regBytes += numericTypeToObject[config.appendRegisterMap[reg].type].bytes;
         }
       }
     }
@@ -109,7 +109,7 @@ export class CPU {
     if (typeof register === 'number') register = this.registerFromOffset(register);
     if (!(register in this.registerMap)) throw new Error(`SIGABRT - Unknown register ${register} in READ operation`);
     const meta = this.registerMap[register];
-    return this._registers[numberTypeToObject[meta.type].getMethod](meta.offset);
+    return this._registers[numericTypeToObject[meta.type].getMethod](meta.offset);
   }
 
   /** Write value to given register (if number, this is the registers' offset) */
@@ -118,7 +118,7 @@ export class CPU {
     if (!(register in this.registerMap)) throw new Error(`SIGABRT - Unknown register ${register} in WRITE operation`);
     const meta = this.registerMap[register];
     if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(register, value, this);
-    return this._registers[numberTypeToObject[meta.type].setMethod](meta.offset, value);
+    return this._registers[numericTypeToObject[meta.type].setMethod](meta.offset, value);
   }
 
   // #endregion
@@ -246,11 +246,11 @@ export class CPU {
     // for (let i = 0; i < this._generalRegisters.length; i++) this.push(this.readRegister(this._generalRegisters[i])); // Store general purpose registers
     for (let i = 0; i < this._preserveRegisters.length; i++) {
       let rname = this._preserveRegisters[i];
-      this.push(this.readRegister(rname), numberTypeToObject[this.registerMap[rname].type]);
+      this.push(this.readRegister(rname), numericTypeToObject[this.registerMap[rname].type]);
     }
 
-    this.push(this.readRegister(this.regInstructionPtr), numberTypeToObject[this.registerMap[this.regInstructionPtr].type]); // Instruction Pointer
-    this.push(this._stackFrameSize + 1, numberTypeToObject["uint32"]); // Record stack frame size
+    this.push(this.readRegister(this.regInstructionPtr), numericTypeToObject[this.registerMap[this.regInstructionPtr].type]); // Instruction Pointer
+    this.push(this._stackFrameSize + 1, numericTypeToObject["uint32"]); // Record stack frame size
     this.writeRegister(this.regFramePtr, this.readRegister(this.regStackPtr));
     this._stackFrameSize = 0;
   }
@@ -260,18 +260,18 @@ export class CPU {
     const fpAddr = this.readRegister(this.regFramePtr);
     this.writeRegister(this.regStackPtr, fpAddr);
 
-    const sfs = this.pop(numberTypeToObject["uint32"]);
+    const sfs = this.pop(numericTypeToObject["uint32"]);
     this._stackFrameSize = sfs;
 
     // Pop all stored registers
-    this.writeRegister(this.regInstructionPtr, this.pop(numberTypeToObject[this.registerMap[this.regInstructionPtr].type]));
+    this.writeRegister(this.regInstructionPtr, this.pop(numericTypeToObject[this.registerMap[this.regInstructionPtr].type]));
     for (let i = this._preserveRegisters.length - 1; i >= 0; i--) {
       let rname = this._preserveRegisters[i];
-      this.writeRegister(rname, this.pop(numberTypeToObject[this.registerMap[rname].type]));
+      this.writeRegister(rname, this.pop(numericTypeToObject[this.registerMap[rname].type]));
     }
     // Pop subroutine args
-    const argBytes = this.pop(numberTypeToObject["uint32"]);
-    for (let i = 0; i < argBytes; i++) this.pop(numberTypeToObject["int8"]);
+    const argBytes = this.pop(numericTypeToObject["uint32"]);
+    for (let i = 0; i < argBytes; i++) this.pop(numericTypeToObject["int8"]);
     // Reset frame pointer
     this.writeRegister(this.regFramePtr, fpAddr + sfs);
   }

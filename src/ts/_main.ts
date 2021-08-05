@@ -140,7 +140,7 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.AQAARMExt, {
+  __app_init_(CPUModel.RS, {
     numType: 'int16',
   });
 
@@ -148,19 +148,6 @@ function __app_main_() {
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\nHALT";
 
   globals.tabs._.open("code");
-
-  tabCode.properties.assemblyCodeInput.value = `
-MOV r1, #05 ; Number to find factorial of
-MOV r7, r1  ; Set result to initial number
-
-loop:
-SUB r1, r1, #1 ; r1--
-MUL r7, r7, r1 ; r7 *= r1
-CMP r1, #2 ; Compare with #2 as no need to multiply by 1, and avoid multiplying by 0
-BGT loop
-
-HALT
-  `.trim();
 
   //   tabCode.properties.assemblyCodeInput.value = `
   // main:

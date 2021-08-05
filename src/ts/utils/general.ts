@@ -128,12 +128,19 @@ export function getNumTypeInfo(type: NumberType): INumberType {
 }
 globalThis.getNumTypeInfo = getNumTypeInfo;
 
+/** Map type string to number-type object */
+export const numericTypeToObject = Object.fromEntries(numericTypes.map(t => ([t, getNumTypeInfo(t)])));
+globalThis.numericTypeToObject = numericTypeToObject;
+
+/** Map number types to their corresponding numbers */
+export const numberTypeMap = createEnum(Object.fromEntries(numericTypes.map((t, i) => ([t, i]))));
+
 export function castNumber(number: number, fromType: INumberType, toType: INumberType) {
   let size = Math.max(fromType.bytes, toType.bytes) / fromType.bytes;
   let arrFrom = new fromType.constructor(size);
   arrFrom[0] = number;
   let arrTo = new toType.constructor(arrFrom.buffer);
-  return arrTo[0];
+  return Number(arrTo[0]);
 }
 globalThis.castNumber = castNumber;
 

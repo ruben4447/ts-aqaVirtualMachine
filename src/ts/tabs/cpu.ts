@@ -3,8 +3,7 @@ import globals from "../globals";
 import { CPUModel } from "../types/CPU";
 import { NumberType } from "../types/general";
 import { ICPUTabProperties, ITabInfo } from "../types/Tabs";
-import { numberTypeToObject } from "../utils/CPU";
-import { booleanToHTML, getMinMaxValues, numberToString, numericTypes, seperateNumber } from "../utils/general";
+import { booleanToHTML, getMinMaxValues, numberToString, numericTypes, seperateNumber, numericTypeToObject } from "../utils/general";
 import { __app_init_ } from "../_main";
 import { updateGUI } from "./memory";
 
@@ -137,7 +136,7 @@ function generateHTML(): HTMLDivElement {
       highestRegister = reg;
       maxRegOffset = globals.cpu.registerMap[reg].offset;
     }
-  let regBytes = globals.cpu.registerMap[highestRegister].offset + numberTypeToObject[globals.cpu.registerMap[highestRegister].type].bytes;
+  let regBytes = globals.cpu.registerMap[highestRegister].offset + numericTypeToObject[globals.cpu.registerMap[highestRegister].type].bytes;
   div.insertAdjacentHTML('beforeend', `<h3>Registers (<small>${Object.keys(globals.cpu.registerMap).length}</small>; ${regBytes} bytes)</h3>`);
   table = document.createElement('table');
   wrapper.appendChild(table);
@@ -151,7 +150,7 @@ function generateHTML(): HTMLDivElement {
       tr.insertAdjacentHTML(`beforeend`, `<th>${register}</th>`);
       tr.insertAdjacentHTML(`beforeend`, `<td>${meta.type}</td>`);
       tr.insertAdjacentHTML(`beforeend`, `<td>${meta.offset}</td>`);
-      tr.insertAdjacentHTML(`beforeend`, `<td>${numberTypeToObject[meta.type].bytes * 8}</td>`);
+      tr.insertAdjacentHTML(`beforeend`, `<td>${numericTypeToObject[meta.type].bytes * 8}</td>`);
       tr.insertAdjacentHTML(`beforeend`, `<td>${booleanToHTML(meta.preserve)}</td>`);
       tr.insertAdjacentHTML(`beforeend`, `<td><small><em>${meta.desc ?? 'N/A'}</em></small></td>`);
       tbody.appendChild(tr);

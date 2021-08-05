@@ -1,10 +1,9 @@
 import CPU from "./CPU/CPU";
 import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
 import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
-import { arrayToBuffer, bufferToArray, getNumericBaseFromPrefix, hex, numericTypesAbbr, underlineStringPortion } from "../utils/general";
+import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject } from "../utils/general";
 import { ICPUInstructionSet } from "../types/CPU";
-import { INumberType, NumberType } from "../types/general";
-import { numberTypeMap, numberTypeToObject } from "../utils/CPU";
+import { INumberType, NumberType, numberTypeMap } from "../types/general";
 
 export class AssemblerError extends Error {
   protected _messageStack: string[];
@@ -243,8 +242,8 @@ export class Assembler {
           bytes++;
         }
         line.args.forEach(arg => {
-          bytes += numberTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes;
-          // console.log(`${line.instruction}: arg: + ${numberTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes}`, arg)
+          bytes += numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes;
+          // console.log(`${line.instruction}: arg: + ${numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes}`, arg)
         });
       }
     });
@@ -260,7 +259,7 @@ export class Assembler {
         address += this._cpu.instructType.bytes;
         if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) bytes++;
         line.args.forEach(arg => {
-          address += numberTypeToObject[arg.ntype].bytes;
+          address += numericTypeToObject[arg.ntype].bytes;
         });
       }
     }
@@ -292,7 +291,7 @@ export class Assembler {
           }
 
           info.args.forEach(arg => {
-            typeObj = numberTypeToObject[arg.ntype];
+            typeObj = numericTypeToObject[arg.ntype];
             dv[typeObj.setMethod](byteOffset, arg.num); // Add argument's numeric representation to memory
             byteOffset += typeObj.bytes;
           });

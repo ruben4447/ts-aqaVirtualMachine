@@ -1,11 +1,9 @@
 import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
-import { getNumTypeInfo, numberToString } from "../utils/general";
+import { numericTypeToObject, numberToString } from "../utils/general";
 import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
-import globals from "../globals";
 import { INumberType, NumberType } from "../types/general";
-import { numberTypeToObject } from "../utils/CPU";
 
 const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
 
@@ -26,7 +24,7 @@ export class MemoryView {
       font.size = 11;
     });
     this.cpu = cpu;
-    this._type = numberTypeToObject["int8"];
+    this._type = numericTypeToObject["int8"];
 
     this._updateCache();
     this._render();

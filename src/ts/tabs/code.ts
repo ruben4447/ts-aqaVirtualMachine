@@ -3,8 +3,7 @@ import Popup from "../classes/Popup";
 import globals from "../globals";
 import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { numberTypeToObject } from "../utils/CPU";
-import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, numericTypesAbbr, numericTypesAbbrEnum, readTextFile } from "../utils/general";
+import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, numericTypesAbbr, numericTypeToObject, numericTypesAbbrEnum, readTextFile } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -352,7 +351,7 @@ function displayPartialTranslation() {
 function displayMachineCode() {
   // Machine code - array of uint8 bytes
   let machineCode = '';
-  const view = new DataView(properties.machineCode), ntype = numberTypeToObject["uint8"];
+  const view = new DataView(properties.machineCode), ntype = numericTypeToObject["uint8"];
 
   for (let i = 0; i < view.byteLength; i++) {
     const number = view[ntype.getMethod](i);

@@ -1,5 +1,4 @@
-import { numberTypeToObject } from "../utils/CPU";
-import { numberToString } from "../utils/general";
+import { numberToString, numericTypeToObject } from "../utils/general";
 import CPU from "./CPU/CPU";
 import CustomScreen from "./Screen";
 
@@ -61,7 +60,7 @@ export class RegisterView {
 
     for (let register in this.cpu.registerMap) {
       const value = this.cpu.readRegister(register);
-      let text = numberToString(numberTypeToObject[this.cpu.registerMap[register].type], value, this._base);
+      let text = numberToString(numericTypeToObject[this.cpu.registerMap[register].type], value, this._base);
       S.writeString(text, false);
       S.y += ySpacing;
     }

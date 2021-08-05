@@ -2,8 +2,8 @@ import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
 import { INumberType, NumberType } from "../../types/general";
 import CPU from "./CPU";
 import { instructionSet } from '../../instruction-set/rs';
-import { CMP, compare, numberTypeMap, numberTypeToObject } from "../../utils/CPU";
-import { getNumTypeInfo, getTextMetrics } from "../../utils/general";
+import { CMP, compare } from "../../utils/CPU";
+import { getNumTypeInfo, numericTypeToObject, numberTypeMap } from "../../utils/general";
 
 export class RSProcessor extends CPU {
     public static readonly defaultRegisters: string[] = [];
@@ -23,18 +23,18 @@ export class RSProcessor extends CPU {
 
     /** Fetch from memory given data type */
     fetchType(dt: NumberType) {
-        return super.fetch(numberTypeToObject[dt]);
+        return super.fetch(numericTypeToObject[dt]);
     }
 
     /** Fetch byte indicating data type */
-    fetchDT() { return this.fetch(numberTypeToObject["uint8"]); }
+    fetchDT() { return this.fetch(numericTypeToObject["uint8"]); }
 
     /** Fetch register from memory */
     fetchReg() { return this.fetch(this.regType); }
 
     /** Get next byte indicating a DATA TYPE from memory */
     getDataType() {
-        const n = this.fetch(numberTypeToObject["uint8"]);
+        const n = this.fetch(numericTypeToObject["uint8"]);
         const str = numberTypeMap[n];
         if (str == undefined) throw new Error(`SIGILL - unknown data type flag ${n}`);
         return { type: n, typeStr: str }
@@ -61,7 +61,7 @@ export class RSProcessor extends CPU {
                 console.log(type, typeStr);
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [type, register1, register2];
-                const register2value = this.readRegister(register2, numberTypeToObject[typeStr]);
+                const register2value = this.readRegister(register2, numericTypeToObject[typeStr]);
                 if (comment) info.text = `Copy value in register ${this.registerMap[register2]} (0x${this.toHex(register2value)}) to register ${this.registerMap[register1]}`;
                 this.writeRegister(register1, register2value);
                 break;

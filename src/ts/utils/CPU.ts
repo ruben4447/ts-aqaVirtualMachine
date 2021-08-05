@@ -35,26 +35,5 @@ export function generateCPUInstructionSet(instructionSet: IInstructionSet): ICPU
   return data;
 }
 
-/** Map number types to their corresponding numbers */
-export const numberTypeMap = createEnum({
-  int8: 0,
-  uint8: 1,
-  int16: 2,
-  uint16: 3,
-  int32: 4,
-  uint32: 5,
-  int64: 6,
-  uint64: 7,
-  float32: 8,
-  float64: 9,
-});
-
-export const numberTypeToObject = {};
-for (let key in numberTypeMap) {
-  if (numberTypeMap.hasOwnProperty(key) && isNaN(+key)) {
-    numberTypeToObject[key] = getNumTypeInfo(key as any);
-  }
-}
-
 /** Create register object */
 export const createRegister = (offset: number, type: NumberType, preserve: boolean, desc?: string): IRegisterInfo => ({ offset, type, preserve, desc });

@@ -1,6 +1,5 @@
 import { CPUModel, ICPUConfiguration, IExecuteRecord } from "../../types/CPU";
-import { arrayToBuffer, castNumber, getNumTypeInfo, hex, numberToString } from "../../utils/general";
-import { CMP, compare, numberTypeMap } from '../../utils/CPU';
+import { arrayToBuffer, castNumber, getNumTypeInfo, hex, numberToString, numberTypeMap } from "../../utils/general";
 import { instructionSet as aqaInstructionSetExtended } from '../../instruction-set/aqa-arm-extended';
 import ARMProcessor from "./AQA-ARM";
 
@@ -28,7 +27,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const registerValue = this.readRegister(register), address = this.readRegister(registerPtr);
           info.args = [register, registerPtr];
           if (this.executionConfig.commentary) {
-            info.text = `Load value in register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to memory address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)})`;
+            info.text = `Load value in register ${this._registerOffsets[register]} (0x${this.toHex(registerValue)}) to memory address in register ${this._registerOffsets[registerPtr]} (0x${this.toHex(address)})`;
           }
           this.writeMemory(address, registerValue);
           break;
@@ -39,7 +38,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const address = this.readRegister(registerPtr), addressValue = this.readMemory(address);
           info.args = [register, registerPtr];
           if (this.executionConfig.commentary) {
-            info.text = `Load value at address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)} -> 0x${this.toHex(addressValue)}) into register ${this.registerMap[register]}`;
+            info.text = `Load value at address in register ${this._registerOffsets[registerPtr]} (address 0x${this.toHex(address)} -> 0x${this.toHex(addressValue)}) into register ${this._registerOffsets[register]}`;
           }
           this.writeRegister(register, addressValue);
           break;
@@ -50,7 +49,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const address = this.readRegister(registerPtr), registerValue = this.readRegister(register);
           info.args = [registerPtr, register];
           if (this.executionConfig.commentary) {
-            info.text = `Copy value at register ${this.registerMap[register]} (0x${this.toHex(registerValue)}) to address in register ${this.registerMap[registerPtr]} (address 0x${this.toHex(address)})`;
+            info.text = `Copy value at register ${this._registerOffsets[register]} (0x${this.toHex(registerValue)}) to address in register ${this._registerOffsets[registerPtr]} (address 0x${this.toHex(address)})`;
           }
           this.writeMemory(address, registerValue);
           break;
@@ -59,9 +58,9 @@ export class ARMProcessorExtended extends ARMProcessor {
           // INP registers
           let register = this.fetch();
           info.args = [register];
-          let userInput = +(globalThis.prompt(`STDIN: integer to register ${this.registerMap[register]}`, '0'));
+          let userInput = +(globalThis.prompt(`STDIN: integer to register ${this._registerOffsets[register]}`, '0'));
           if (this.executionConfig.commentary) {
-            info.text = `Load user input to register ${this.registerMap[register]} - STDIN recieved 0x${this.toHex(userInput)}`;
+            info.text = `Load user input to register ${this._registerOffsets[register]} - STDIN recieved 0x${this.toHex(userInput)}`;
           }
           this.writeRegister(register, userInput);
           break;
@@ -87,7 +86,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           let nums = string.split('').map(x => x.charCodeAt(0));
           nums.push(0);
           if (this.executionConfig.commentary) {
-            info.text = `Load user input string to address stored in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)})`;
+            info.text = `Load user input string to address stored in register ${this._registerOffsets[registerPtr]} (0x${this.toHex(address)})`;
           }
           this.loadMemoryBytes(address, arrayToBuffer(nums, this.numType));
           break;
@@ -97,9 +96,9 @@ export class ARMProcessorExtended extends ARMProcessor {
           let register = this.fetch(), value = this.readRegister(register);
           info.args = [register];
           if (this.executionConfig.commentary) {
-            info.text = `Output register ${this.registerMap[register]}: 0x${this.toHex(value)}`;
+            info.text = `Output register ${this._registerOffsets[register]}: 0x${this.toHex(value)}`;
           }
-          let output = `[STDOUT: register ${this.registerMap[register]}] >> ${value}`;
+          let output = `[STDOUT: register ${this._registerOffsets[register]}] >> ${value}`;
           console.log(output);
           globalThis.alert(output);
           break;
@@ -109,9 +108,9 @@ export class ARMProcessorExtended extends ARMProcessor {
           let register = this.fetch(), value = this.readRegister(register), chr = String.fromCharCode(value);
           info.args = [register];
           if (this.executionConfig.commentary) {
-            info.text = `Output register ${this.registerMap[register]} as ASCII: ${chr} (0x${this.toHex(value)})`;
+            info.text = `Output register ${this._registerOffsets[register]} as ASCII: ${chr} (0x${this.toHex(value)})`;
           }
-          let output = `[STDOUT: register ${this.registerMap[register]}] >> ${chr}`;
+          let output = `[STDOUT: register ${this._registerOffsets[register]}] >> ${chr}`;
           console.log(output);
           globalThis.alert(output);
           break;
@@ -129,7 +128,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           if (this.executionConfig.commentary) {
             info.text = `Output memory as null-terminated string from address 0x${this.toHex(address)} - string of length ${string.length}`;
           }
-          let output = `[STDOUT: address 0x${this.registerMap[address]}] >> ${string}`;
+          let output = `[STDOUT: address 0x${this._registerOffsets[address]}] >> ${string}`;
           globalThis.alert(output);
           console.log(output);
           break;
@@ -145,7 +144,7 @@ export class ARMProcessorExtended extends ARMProcessor {
             string += String.fromCharCode(n);
           }
           if (this.executionConfig.commentary) {
-            info.text = `Output memory as null-terminated string from address in register ${this.registerMap[registerPtr]} (0x${this.toHex(address)}) - string of length ${string.length}`;
+            info.text = `Output memory as null-terminated string from address in register ${this._registerOffsets[registerPtr]} (0x${this.toHex(address)}) - string of length ${string.length}`;
           }
           let output = `[STDOUT: address 0x${this.toHex(address)}] >> ${string}`;
           console.log(output);
@@ -160,7 +159,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = register2val * register3val;
           info.args = [register1, register2, register3];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} * register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} * register ${this._registerOffsets[register3]} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -172,7 +171,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = register2val * addressVal;
           info.args = [register1, register2, address];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} * address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} * address 0x${hex(address)} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} * 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -185,7 +184,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           info.args = [register1, register2, constant];
           if (this.executionConfig.commentary) {
             const constantHex = this.toHex(constant);
-            info.text = `Store register ${this.registerMap[register2]} * 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} * 0x${constantHex} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} * 0x${constantHex} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} * 0x${constantHex} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -197,7 +196,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = register2val / register3val;
           info.args = [register1, register2, register3];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} / register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} / register ${this._registerOffsets[register3]} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -209,7 +208,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = register2val / addressVal;
           info.args = [register1, register2, address];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} / address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} / address 0x${hex(address)} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} / 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -222,7 +221,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           info.args = [register1, register2, constant];
           if (this.executionConfig.commentary) {
             const constantHex = this.toHex(constant);
-            info.text = `Store register ${this.registerMap[register2]} / 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} / 0x${constantHex} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} / 0x${constantHex} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} / 0x${constantHex} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -234,7 +233,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = Math.pow(register2val, register3val);
           info.args = [register1, register2, register3];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} ** register ${this.registerMap[register3]} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} ** 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} ** register ${this._registerOffsets[register3]} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} ** 0x${this.toHex(register3val)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -246,7 +245,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = Math.pow(register2val, addressVal);
           info.args = [register1, register2, address];
           if (this.executionConfig.commentary) {
-            info.text = `Store register ${this.registerMap[register2]} ** address 0x${hex(address)} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} ** 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} ** address 0x${hex(address)} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} ** 0x${this.toHex(addressVal)} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -259,7 +258,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           info.args = [register1, register2, constant];
           if (this.executionConfig.commentary) {
             const constantHex = this.toHex(constant);
-            info.text = `Store register ${this.registerMap[register2]} ** 0x${constantHex} in register ${this.registerMap[register1]}\n0x${this.toHex(register2val)} ** 0x${constantHex} = 0x${this.toHex(result)}`;
+            info.text = `Store register ${this._registerOffsets[register2]} ** 0x${constantHex} in register ${this._registerOffsets[register1]}\n0x${this.toHex(register2val)} ** 0x${constantHex} = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register1, result);
           break;
@@ -271,7 +270,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const result = Math.sqrt(registerVal);
           info.args = [register];
           if (this.executionConfig.commentary) {
-            info.text = `Caculate register sqrt(${this.registerMap[register]})\nsqrt(0x${this.toHex(registerVal)}) = 0x${this.toHex(result)}`;
+            info.text = `Caculate register sqrt(${this._registerOffsets[register]})\nsqrt(0x${this.toHex(registerVal)}) = 0x${this.toHex(result)}`;
           }
           this.writeRegister(register, result);
           break;
@@ -287,7 +286,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const castType = getNumTypeInfo(dt);
           const number = castNumber(registerVal, this.numType, castType);
           if (this.executionConfig.commentary) {
-            info.text = `Cast register ${this.registerMap[register]} from type ${this.numType.type} (${numberTypeMap[this.numType.type]}) to ${castType.type} (${constant})\n0x${numberToString(this.numType, registerVal, 16)} => 0x${numberToString(this.numType, number, 16)}`;
+            info.text = `Cast register ${this._registerOffsets[register]} from type ${this.numType.type} (${numberTypeMap[this.numType.type]}) to ${castType.type} (${constant})\n0x${numberToString(this.numType, registerVal, 16)} => 0x${numberToString(this.numType, number, 16)}`;
           }
           this.writeRegister(register, number);
           break;
@@ -308,7 +307,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           info.args = [registerVal];
           this.push(registerVal);
           if (this.executionConfig.commentary) {
-            info.text = `Push register ${this.registerMap[register]} (0x${this.toHex(registerVal)}) to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+            info.text = `Push register ${this._registerOffsets[register]} (0x${this.toHex(registerVal)}) to stack\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
           }
           break;
         }
@@ -318,7 +317,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           const value = this.pop();
           info.args = [register];
           if (this.executionConfig.commentary) {
-            const rSymbol = this.registerMap[register];
+            const rSymbol = this._registerOffsets[register];
             info.text = `Pop value to register ${rSymbol}\n${rSymbol} = 0x${this.toHex(value)}`;
           }
           this.writeRegister(register, value);
@@ -343,7 +342,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           this.pushFrame();
           this.writeRegister("ip", registerVal);
           if (this.executionConfig.commentary) {
-            info.text = `Call subroutine @ register ${this.registerMap[register]} (0x${this.toHex(registerVal)})\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
+            info.text = `Call subroutine @ register ${this._registerOffsets[register]} (0x${this.toHex(registerVal)})\nSP = 0x${this.toHex(this.readRegister('sp'))}; FP = 0x${this.toHex(this.readRegister('fp'))}`;
           }
           break;
         }

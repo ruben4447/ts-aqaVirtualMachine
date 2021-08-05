@@ -2,8 +2,7 @@ import MemoryView from "../classes/MemoryView";
 import RegisterView from "../classes/RegisterView";
 import globals from "../globals";
 import { IMemoryTabProperties, ITabInfo } from "../types/Tabs";
-import { numberTypeMap, numberTypeToObject } from "../utils/CPU";
-import { hex } from "../utils/general";
+import { hex, numericTypeToObject, numberTypeMap } from "../utils/general";
 
 export const info: ITabInfo = {
   content: undefined,
@@ -82,7 +81,7 @@ function generateMemoryViewHTML(): HTMLDivElement {
   }
   selectNType.addEventListener("change", () => {
     let tname = numberTypeMap[+selectNType.value];
-    view.type = numberTypeToObject[tname];
+    view.type = numericTypeToObject[tname];
   });
   p.appendChild(selectNType);
   inputtedAddress(0);
