@@ -149,8 +149,9 @@ function __app_main_() {
   globals.tabs._.open("code");
 
   tabCode.properties.assemblyCodeInput.value = `
-INC eax
-INC xmm1
+movi64 r10, #xfffffffff
+movi64 r11, #xdeeeeeeee
+and r10, r11
 hlt
   `.trim();
 

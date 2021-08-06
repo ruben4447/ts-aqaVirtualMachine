@@ -341,7 +341,7 @@ export class RSProcessor extends CPU {
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
-                const result = value1 & value2;
+                const result = Number(BigInt(value1) & BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register1]} & register ${this._registerOffsets[register2]}\n${value1} & ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -353,7 +353,7 @@ export class RSProcessor extends CPU {
                 info.type = type;
                 const value1 = this.readRegister(register), value2 = this.fetchType(typeStr);
                 info.args = [register, value2];
-                const result = value1 & value2;
+                const result = Number(BigInt(value1) & BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register]} & ${typeStr} constant\n${value1} & ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -363,7 +363,7 @@ export class RSProcessor extends CPU {
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
-                const result = value1 | value2;
+                const result = Number(BigInt(value1) | BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register1]} | register ${this._registerOffsets[register2]}\n${value1} | ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -375,7 +375,7 @@ export class RSProcessor extends CPU {
                 info.type = type;
                 const value1 = this.readRegister(register), value2 = this.fetchType(typeStr);
                 info.args = [register, value2];
-                const result = value1 | value2;
+                const result = Number(BigInt(value1) | BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register]} | ${typeStr} constant\n${value1} | ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -385,7 +385,7 @@ export class RSProcessor extends CPU {
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
-                const result = value1 ^ value2;
+                const result = Number(BigInt(value1) ^ BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register1]} ^ register ${this._registerOffsets[register2]}\n${value1} ^ ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -397,7 +397,7 @@ export class RSProcessor extends CPU {
                 info.type = type;
                 const value1 = this.readRegister(register), value2 = this.fetchType(typeStr);
                 info.args = [register, value2];
-                const result = value1 ^ value2;
+                const result = Number(BigInt(value1) ^ BigInt(value2));
                 if (comment) info.text = `Register ${this._registerOffsets[register]} ^ ${typeStr} constant\n${value1} ^ ${value2} = ${result}`;
                 this.writeRegister(this.regIAcc, result);
                 break;
@@ -407,7 +407,7 @@ export class RSProcessor extends CPU {
                 const register = this.fetchReg();
                 info.args = [register];
                 const regValue = this.readRegister(register);
-                const result = ~regValue;
+                const result = Number(~BigInt(regValue));
                 if (comment) {
                     const type = this.registerMap[this.regIAcc].type;
                     info.text = `NOT register ${this._registerOffsets[register]}\n~0x${hex(regValue, type)} = 0x${hex(result, type)}`;
@@ -420,12 +420,12 @@ export class RSProcessor extends CPU {
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
-                const result = value1 << value2;
+                const result = Number(BigInt(value1) << BigInt(value2));
                 if (comment) {
                     const t1 = this.registerMap[this._registerOffsets[register1]].type, t2 = this.registerMap[this._registerOffsets[register2]].type;
                     info.text = `Left shift register ${this._registerOffsets[register1]} by register ${this._registerOffsets[register2]}\n0x${hex(value1, t1)} << 0x${hex(value2, t2)} = 0x${hex(result, t1)}`;
                 }
-                this.writeRegister(register1, result);
+                this.writeRegister(this.regIAcc, result);
                 break;
             }
             case this.instructionSet.SHL_REG_CONST: {
@@ -435,12 +435,12 @@ export class RSProcessor extends CPU {
                 info.type = type;
                 const value1 = this.readRegister(register), value2 = this.fetchType(typeStr);
                 info.args = [register, value2];
-                const result = value1 << value2;
+                const result = Number(BigInt(value1) << BigInt(value2));
                 if (comment) {
                     const t1 = this.registerMap[this._registerOffsets[register]].type;
                     info.text = `Left shift register ${this._registerOffsets[register]} by ${typeStr} constant\n0x${hex(value1, t1)} << 0x${hex(value2, typeStr)} = 0x${hex(result, t1)}`;
                 }
-                this.writeRegister(register, result);
+                this.writeRegister(this.regIAcc, result);
                 break;
             }
             case this.instructionSet.SHR_REG_REG: {
@@ -448,12 +448,12 @@ export class RSProcessor extends CPU {
                 const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
-                const result = value1 >> value2;
+                const result = Number(BigInt(value1) >> BigInt(value2));
                 if (comment) {
                     const t1 = this.registerMap[this._registerOffsets[register1]].type, t2 = this.registerMap[this._registerOffsets[register2]].type;
                     info.text = `Right shift register ${this._registerOffsets[register1]} by register ${this._registerOffsets[register2]}\n0x${hex(value1, t1)} << 0x${hex(value2, t2)} = 0x${hex(result, t1)}`;
                 }
-                this.writeRegister(register1, result);
+                this.writeRegister(this.regIAcc, result);
                 break;
             }
             case this.instructionSet.SHR_REG_CONST: {
@@ -463,12 +463,12 @@ export class RSProcessor extends CPU {
                 info.type = type;
                 const value1 = this.readRegister(register), value2 = this.fetchType(typeStr);
                 info.args = [register, value2];
-                const result = value1 >> value2;
+                const result = Number(BigInt(value1) >> BigInt(value2));
                 if (comment) {
                     const t1 = this.registerMap[this._registerOffsets[register]].type;
                     info.text = `Rigth shift register ${this._registerOffsets[register]} by ${typeStr} constant\n0x${hex(value1, t1)} << 0x${hex(value2, typeStr)} = 0x${hex(result, t1)}`;
                 }
-                this.writeRegister(register, result);
+                this.writeRegister(this.regIAcc, result);
                 break;
             }
             case this.instructionSet.CMP_REG_REG: {
