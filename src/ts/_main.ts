@@ -21,7 +21,6 @@ import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
-import { createRegister } from "./utils/CPU";
 globalThis.utils = utils;
 
 /**

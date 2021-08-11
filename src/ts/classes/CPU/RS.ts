@@ -4,6 +4,7 @@ import CPU from "./CPU";
 import { instructionSet } from '../../instruction-set/rs';
 import { CMP, compare, createRegister } from "../../utils/CPU";
 import { getNumTypeInfo, numericTypeToObject, numberTypeMap, numberToString } from "../../utils/general";
+import { FlagGenerator } from "../Flags";
 
 const hex = (n: number, t: NumberType) => numberToString(numericTypeToObject[t], n, 16);
 
@@ -43,7 +44,14 @@ export class RSProcessor extends CPU {
     public readonly model: CPUModel = CPUModel.RS;
     public readonly regIAcc: string = 'rax'; // Integer Accumulator
     public readonly regFAcc: string = 'xmm0'; // Float Accumulator
-
+    public readonly flagsAbout = {
+        "EQ": "Equals; a == b",
+        "GT": "Greater Than; a > b",
+        "LT": "Less Than; a < b",
+        "Z": "Zero; a == 0",
+        "N": "Negative; a < 0",
+    };
+    public readonly flagGen = new FlagGenerator();
 
     public constructor(config: ICPUConfiguration) {
         config.registerMap = createRegisterMap();
@@ -57,29 +65,44 @@ export class RSProcessor extends CPU {
         this.addrType = numericTypeToObject["uint32"];
         this.instructTypeSuffixes = true;
 
+        Object.keys(this.flagsAbout).forEach(x => this.flagGen.addField(x));
+
         this.resetRegisters();
     }
 
     /** Fetch from memory given data type */
-    fetchType(dt: NumberType) {
+    public fetchType(dt: NumberType) {
         return super.fetch(numericTypeToObject[dt]);
     }
 
     /** Fetch byte indicating data type */
-    fetchDT() { return this.fetch(numericTypeToObject["uint8"]); }
+    public fetchDT() { return this.fetch(numericTypeToObject["uint8"]); }
 
     /** Fetch register from memory */
-    fetchReg() { return this.fetch(this.regType); }
+    public fetchReg() { return this.fetch(this.regType); }
 
     /** Fetch address from memory */
-    fetchAddr() { return this.fetch(this.addrType); }
+    public fetchAddr() { return this.fetch(this.addrType); }
 
     /** Get next byte indicating a DATA TYPE from memory */
-    getDataType() {
+    public getDataType() {
         const n = this.fetch(numericTypeToObject["uint8"]);
         const str: NumberType = numberTypeMap[n];
         if (str == undefined) throw new Error(`SIGILL - unknown data type flag ${n}`);
         return { type: n, typeStr: str }
+    }
+
+    /** Update flags */
+    public updateFlags(a: number, b?: number) {
+        const flag = this.flagGen.generate();
+        if (a === 0) flag.set("Z"); // a == 0
+        else if (a < 0) flag.set("N"); // a < 0
+
+        if (b !== undefined) {
+            if (a === b) flag.set("EQ"); // a == b
+            else if (a < b) flag.set("LT"); // a < b
+            else flag.set("GT"); // a > b
+        }
     }
 
     /** @override */
@@ -473,15 +496,14 @@ export class RSProcessor extends CPU {
             }
             case this.instructionSet.CMP_REG_REG: {
                 // CMP register1 register2
-                const register1 = this.fetch(), register2 = this.fetch();
+                const register1 = this.fetchReg(), register2 = this.fetchReg();
                 info.args = [register1, register2];
                 const value1 = this.readRegister(register1), value2 = this.readRegister(register2);
                 info.args = [register1, register2];
-                const comparison = compare(value1, value2);
+                this.updateFlags(value1, value2);
                 if (this.executionConfig.commentary) {
-                    info.text = `Compare register ${this._registerOffsets[register1]} and register ${this._registerOffsets[register2]}\ncompare(0x${hex(value1)}, 0x${hex(value2)}) => ${comparison} (${CMP[comparison]})`;
+                    info.text = `Compare register ${this._registerOffsets[register1]} and register ${this._registerOffsets[register2]}\ncompare(${value1}, ${value2}) => rflags: ${numberToString(numericTypeToObject[this.registerMap["rflags"].type], this.readRegister("rflags"), 2)}`;
                 }
-                this.writeRegister('cmp', comparison);
                 break;
             }
             case this.instructionSet.CMP_REG_CONST: {
@@ -489,12 +511,10 @@ export class RSProcessor extends CPU {
                 const register = this.fetch();
                 const value1 = this.readRegister(register), value2 = this.fetch();
                 info.args = [register, value2];
-                const comparison = compare(value1, value2);
+                this.updateFlags(value1, value2);
                 if (this.executionConfig.commentary) {
-                    const v2hex = hex(value2);
-                    info.text = `Compare register ${this._registerOffsets[register]} and 0x${v2hex}\ncompare(0x${hex(value1)}, 0x${v2hex}) => ${comparison} (${CMP[comparison]})`;
+                    info.text = `Compare register ${this._registerOffsets[register]} and ${value2}\ncompare(${value1}, ${value2}) => rflags: ${numberToString(numericTypeToObject[this.registerMap["rflags"].type], this.readRegister("rflags"), 2)}`;
                 }
-                this.writeRegister('cmp', comparison);
                 break;
             }
             case this.instructionSet.JMP_CONST: {

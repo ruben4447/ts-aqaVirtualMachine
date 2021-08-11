@@ -5,9 +5,9 @@ import { createEnum, getNumTypeInfo, hex } from "./general";
 
 /** Comparison results. Note, no negative numbers to support unsigned data types. */
 export enum CMP {
-  EQUAL_TO = 0x0,
-  LESS_THAN = 0x1,
-  GREATER_THAN = 0x2,
+  EQUAL_TO = 0,
+  LESS_THAN = 1,
+  GREATER_THAN = 2,
 }
 
 export function compare(a: number, b: number): CMP {

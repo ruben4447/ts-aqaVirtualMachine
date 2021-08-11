@@ -255,7 +255,7 @@ export const instructionSet: IInstructionSet = {
         opcode: 0x50,
         args: [AssemblerType.Register, AssemblerType.Register],
         desc: "Compare register [register1] to [register2]. Set flag in cmp register.",
-        typeSuffix: true,
+        typeSuffix: false,
     },
     CMP_REG_CONST: {
         mnemonic: "CMP",
