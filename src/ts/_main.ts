@@ -3,6 +3,7 @@ import CustomScreen from "./classes/Screen";
 
 import Tabs from "./classes/Tabs";
 import * as tabMemory from "./tabs/memory";
+import * as tabStack from "./tabs/stack";
 import * as tabCode from "./tabs/code";
 import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
@@ -80,6 +81,9 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   globals.memoryView = tabMemory.properties.memoryView;
   globals.registerView = tabMemory.properties.registerView;
 
+  tabStack.init();
+  globals.tabs.stack = tabStack.properties;
+
   tabCode.init();
   tabCode.properties.assemblyCodeInput.value = assemblyCode;
   globals.tabs.code = tabCode.properties;
@@ -98,6 +102,7 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
     {
       code: tabCode.info,
       memory: tabMemory.info,
+      stack: tabStack.info,
       run: tabRun.info,
       instructionSet: tabInstructionSet.info,
       cpu: tabCPU.info,
@@ -112,7 +117,7 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   console.log(`%cNew Processor: %c${cpu.model}`, 'color:lime;background:black;', 'color:yellow;background:black;');
   console.log(`%cCPU Data Type%c = %c${cpu.numType.type}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(`%cCPU Memory Size%c = %c0x${utils.hex(cpu.memorySize)}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Registers%c = %c${Object.keys(cpuConfiguration.registerMap).length}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
+  console.log(`%cCPU Registers%c = %c${Object.keys(cpu.registerMap).length}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
   console.log(logPad);
   withinState(globals.output, S => {
     S.reset();
@@ -138,8 +143,8 @@ function __app_main_() {
   ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
 
   // Initiate application
-  __app_init_(CPUModel.RS, {
-    numType: 'int16',
+  __app_init_(CPUModel.AQAARMExt, {
+    numType: 'int16'
   });
 
   // Prompt user
@@ -147,12 +152,12 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-  tabCode.properties.assemblyCodeInput.value = `
-movi64 r10, #xfffffffff
-movi64 r11, #xdeeeeeeee
-and r10, r11
-hlt
-  `.trim();
+//   tabCode.properties.assemblyCodeInput.value = `
+// movi64 r10, #xfffffffff
+// movi64 r11, #xdeeeeeeee
+// and r10, r11
+// hlt
+//   `.trim();
 
   //   tabCode.properties.assemblyCodeInput.value = `
   // main:
@@ -167,13 +172,44 @@ hlt
   //   mul acc, acc
   //   ret
   //   `.trim();
+//   tabCode.properties.assemblyCodeInput.value = `
+// MOV R1, #69
+// MOV R2, #24
+// loop:
+// CMP R1, R2
+// BEQ end
+// BGT if
+// else:
+// SUB R2, R2, R1
+// B loop
+// if:
+// SUB R1, R1, R2
+// B loop
+// end:
+// HALT`.trim();
+  tabCode.properties.assemblyCodeInput.value = `
+PSH #2
+PSH #2
+CAL sub1
+HALT
+
+sub1:
+PSH #0
+CAL sub2
+RET
+
+sub2:
+PSH #8
+BRK
+RET
+  `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
+  tabRun.run();
+  globals.tabs._.open("stack");
+  tabStack.update();
 }
 
 window.addEventListener('load', () => {
   __app_main_();
 });
-
-// TODO:
-// Work on RS Processor

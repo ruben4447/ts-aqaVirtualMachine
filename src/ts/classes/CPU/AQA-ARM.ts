@@ -13,7 +13,7 @@ export class ARMProcessor extends CPU {
   /** Instruction set defaults to AQA arm; present only for overloading purposes */
   constructor(config: ICPUConfiguration, instructionSet?: IInstructionSet) {
     // Call super's constructor, but wih our defaults
-    config.appendRegisterMap = { ...config.appendRegisterMap, cmp: createRegister(16, 'int64', false, 'Stack frame pointer (points to top of current stack frame)') };
+    config.appendRegisterMap = { ...config.appendRegisterMap, cmp: createRegister(16, 'uint8', false, 'Holds current comparison data') };
     super(instructionSet ?? aqaInstructionSet, config, ARMProcessor.defaultNumType);
 
     this.resetRegisters();

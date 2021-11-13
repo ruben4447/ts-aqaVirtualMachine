@@ -315,12 +315,12 @@ export function init() {
     if (startAddress === endAddress) {
       properties.memoryView.update(startAddress);
     } else if (endAddress > startAddress) {
-      for (let a = startAddress; a <= endAddress; a++) {
-        properties.memoryView.update(a);
+      for (let a = startAddress; a < endAddress; a += globals.cpu.numType.bytes) {
+        try { properties.memoryView.update(a); } catch (e) { console.warn(`onMemoryWrite: failed to visually update address ${a}\n${e}`); }
       }
     } else {
-      for (let a = startAddress; a >= endAddress; a--) {
-        properties.memoryView.update(a);
+      for (let a = startAddress - globals.cpu.numType.bytes; a >= endAddress - globals.cpu.numType.bytes; a -= globals.cpu.numType.bytes) {
+        try { properties.memoryView.update(a); } catch (e) { console.warn(`onMemoryWrite: failed to visually update address ${a}\n${e}`); }
       }
     }
   });

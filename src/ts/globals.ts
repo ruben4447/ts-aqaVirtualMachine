@@ -5,7 +5,7 @@ import type RegisterView from "./classes/RegisterView";
 import type CustomScreen from "./classes/Screen";
 import type Tabs from "./classes/Tabs";
 import type { IInstructionSet, IReplaceCommandMap } from "./types/Assembler";
-import type { ICodeTabProperties, ICPUTabProperties, IInstructionSetTabProperties, IMemoryTabProperties, IRunTabProperties } from "./types/Tabs";
+import type { ICodeTabProperties, ICPUTabProperties, IInstructionSetTabProperties, IMemoryTabProperties, IRunTabProperties, IStackTabProperties } from "./types/Tabs";
 
 interface IGlobals {
   $name: string; // Name of application
@@ -19,6 +19,7 @@ interface IGlobals {
     _: Tabs; // Tab manager
     code: ICodeTabProperties;
     memory: IMemoryTabProperties;
+    stack: IStackTabProperties;
     run: IRunTabProperties;
     instructionSet: IInstructionSetTabProperties;
     cpu: ICPUTabProperties;

@@ -5,7 +5,9 @@ import { IMemoryViewCache } from "../types/MemoryView";
 import { withinState } from "../utils/Screen";
 import { INumberType, NumberType } from "../types/general";
 
-const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
+export const pointedAtByIPFG = "yellow"; // Foreground colour an address will be if it is at the address pointed to by the IP
+export const pointedAtBySPFG = "violet"; // Foreground colour an address will be if it is at the address pointed to by the SP
+export const pointedAtByFPFG = "magenta"; // Foreground colour an address will be if it is at the address pointed to by the FP
 
 export class MemoryView {
   public readonly screen: CustomScreen;
@@ -105,7 +107,7 @@ export class MemoryView {
     S.x = startX;
     S.y = this._cache.ySpacing;
     S.setForeground('lightgrey');
-    const ip = this.cpu.readRegister(this.cpu.regInstructionPtr);
+    const ip = this.cpu.readRegister(this.cpu.regInstructionPtr), sp = this.cpu.readRegister(this.cpu.regStackPtr), fp = this.cpu.readRegister(this.cpu.regFramePtr);
     // Address values
     for (let col = 0, addr = this._startAddr; col < this._cols; col++) {
       for (let row = 0; row < this._rows; row++, addr += this._type.bytes) {
@@ -114,15 +116,19 @@ export class MemoryView {
           value = this.cpu.readMemory(addr, this._type);
           text = numberToString(this._type, value, this._base)
         } catch (e) {
-          console.error(e);
+          console.warn(e);
           text = '-';
         }
-        if (addr === ip) {
+        let colour;
+        if (addr === ip) colour = pointedAtByIPFG;
+        else if (addr === sp) colour = pointedAtBySPFG;
+        else if (addr === fp) colour = pointedAtByFPFG;
+        if (colour) {
           withinState(this.screen, S => {
-            S.setForeground(pointedAtByIPFG);
+            S.setForeground(colour);
             S.writeString(text, false);
           });
-        } else {
+        }else {
           S.writeString(text, false);
         }
         S.x += this._cache.xSpacing;

@@ -8,13 +8,6 @@ export const instructionSet: IInstructionSet = {
   ...aqaInstructionSet,
 
   // #region I/O
-  INP: {
-    mnemonic: "INP",
-    opcode: 0x01,
-    args: [AssemblerType.Register],
-    desc: "Prompt for input, and load into register [register]",
-    isAQA: false,
-  },
   INPSTR_ADDR: {
     mnemonic: "INPSTR",
     opcode: 0x02,
@@ -29,11 +22,11 @@ export const instructionSet: IInstructionSet = {
     desc: "Prompt for string input, and load into memory starting at address stored in register [registerPtr]",
     isAQA: false,
   },
-  OUT: {
-    mnemonic: "OUT",
-    opcode: 0x05,
+  INP: {
+    mnemonic: "INP",
+    opcode: 0x01,
     args: [AssemblerType.Register],
-    desc: "Output contents of register [register]",
+    desc: "Prompt for input, and load into register [register]",
     isAQA: false,
   },
   OUTSTR_REG: {
@@ -56,9 +49,34 @@ export const instructionSet: IInstructionSet = {
     args: [AssemblerType.RegisterPtr],
     desc: "Output memory from address in register [registerPtr] as a null-terminates string",
   },
+  OUT: {
+    mnemonic: "OUT",
+    opcode: 0x05,
+    args: [AssemblerType.Register],
+    desc: "Output contents of register [register]",
+    isAQA: false,
+  },
   //#endregion
 
   //#region Maths
+  MOD_REG: {
+    mnemonic: "MOD",
+    opcode: 0x1A,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Register],
+    desc: "[register2] % [register3] and store in [register1]",
+  },
+  MOD_ADDR: {
+    mnemonic: "MOD",
+    opcode: 0x1B,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Address],
+    desc: "[register2] % value at [address] and store in [register1]",
+  },
+  MOD_CONST: {
+    mnemonic: "MOD",
+    opcode: 0x1C,
+    args: [AssemblerType.Register, AssemblerType.Register, AssemblerType.Constant],
+    desc: "[register2] % [const] and store in [register1]",
+  },
   MUL_REG: {
     mnemonic: "MUL",
     opcode: 0x26,

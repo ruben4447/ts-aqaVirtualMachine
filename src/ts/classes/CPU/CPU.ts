@@ -52,12 +52,13 @@ export class CPU {
     } else {
       this.registerMap = {};
       let roff = 0;
-      this.registerMap[this.regInstructionPtr] = createRegister(0, 'int64', true, 'Instruction pointer (points to current instruction)');
-      this.registerMap[this.regStackPtr] = createRegister(8, 'int64', false, 'Stack pointer (top of stack)');
+      this.registerMap[this.regInstructionPtr] = createRegister(0, 'int64', false, 'Instruction pointer (points to current instruction; added in stack frame)');
+      this.registerMap[this.regStackPtr] = createRegister(8, 'int64', false, 'Stack pointer (top of stack - first byte of topmost item)');
       this.registerMap[this.regFramePtr] = createRegister(16, 'int64', false, 'Stack frame pointer (points to top of current stack frame)');
       roff = 24;
-      for (let i = 0; i < 8; i++, roff += 8)
-        this.registerMap['r' + i] = createRegister(roff, 'float64', true);
+      const rCount = 10;
+      for (let i = 0; i < rCount; i++, roff += 8)
+        this.registerMap['r' + i] = createRegister(roff, 'float64', i <= rCount/2);
     }
 
     let regBytes = 0;
@@ -101,8 +102,8 @@ export class CPU {
   /** Reset reisters to initial values */
   public resetRegisters() {
     this.writeRegister(this.regInstructionPtr, 0);
-    this.writeRegister(this.regStackPtr, this.memorySize - 1); // Stack pointer
-    this.writeRegister(this.regFramePtr, this.memorySize - 1); // Frame pointer
+    this.writeRegister(this.regStackPtr, this.memorySize); // Stack pointer
+    this.writeRegister(this.regFramePtr, this.memorySize); // Frame pointer
   }
 
   /** Read value of given register (of register at given byteOffset). */
@@ -118,8 +119,9 @@ export class CPU {
     if (typeof register === 'number') register = this.registerFromOffset(register);
     if (!(register in this.registerMap)) throw new Error(`SIGABRT - Unknown register ${register} in WRITE operation`);
     const meta = this.registerMap[register];
+    const ret = this._registers[numericTypeToObject[meta.type].setMethod](meta.offset, value);
     if (typeof this._callbackRegisterWrite === 'function') this._callbackRegisterWrite(register, value, this);
-    return this._registers[numericTypeToObject[meta.type].setMethod](meta.offset, value);
+    return ret;
   }
 
   // #endregion
@@ -220,15 +222,16 @@ export class CPU {
   }
 
   /** Transform number to hexadecimal in out numbering format */
-  public toHex(n: number): string {
-    return numberToString(this.numType, n, 16);
+  public toHex(n: number, numType?: INumberType): string {
+    numType ??= this.numType;
+    return numberToString(numType, n, 16);
   }
 
   // Push value to the stack
   public push(value: number, numType?: INumberType) {
     numType = numType ?? this.numType;
     let spAddr = this.readRegister("sp");
-    this.writeMemory(spAddr, value, numType);
+    this.writeMemory(spAddr - numType.bytes, value, numType);
     this.writeRegister("sp", spAddr - numType.bytes); // Stack grows DOWN
     this._stackFrameSize += numType.bytes;
   }
@@ -236,10 +239,10 @@ export class CPU {
   // Pop value from stack
   public pop(numType?: INumberType): number {
     numType = numType ?? this.numType
-    let nextSPAddr = this.readRegister("sp") + numType.bytes; // The SP points at the next empty pos; therefore we need to increment the pointer by <bytes> first to get the top value
-    this.writeRegister("sp", nextSPAddr);
+    let sp = this.readRegister("sp"); // The SP points at the next empty pos; therefore we need to increment the pointer by <bytes> first to get the top value
+    this.writeRegister("sp", sp + numType.bytes);
     this._stackFrameSize -= numType.bytes;
-    return this.readMemory(nextSPAddr);
+    return this.readMemory(sp, numType);
   }
 
   // Push stack frame
@@ -251,7 +254,8 @@ export class CPU {
     }
 
     this.push(this.readRegister(this.regInstructionPtr), numericTypeToObject[this.registerMap[this.regInstructionPtr].type]); // Instruction Pointer
-    this.push(this._stackFrameSize + 1, numericTypeToObject["uint32"]); // Record stack frame size
+    const uint32 = numericTypeToObject["uint32"];
+    this.push(this._stackFrameSize + uint32.bytes, uint32); // Record stack frame size (add bytes to account for this value itself)
     this.writeRegister(this.regFramePtr, this.readRegister(this.regStackPtr));
     this._stackFrameSize = 0;
   }
@@ -261,20 +265,66 @@ export class CPU {
     const fpAddr = this.readRegister(this.regFramePtr);
     this.writeRegister(this.regStackPtr, fpAddr);
 
-    const sfs = this.pop(numericTypeToObject["uint32"]);
+    const sfs = this.pop(numericTypeToObject["uint32"]); // Remember stack frame size
     this._stackFrameSize = sfs;
 
-    // Pop all stored registers
-    this.writeRegister(this.regInstructionPtr, this.pop(numericTypeToObject[this.registerMap[this.regInstructionPtr].type]));
+    // Pop all stored registers (reverse order)
+    const ip = this.pop(numericTypeToObject[this.registerMap[this.regInstructionPtr].type]);
+    this.writeRegister(this.regInstructionPtr, ip);
     for (let i = this._preserveRegisters.length - 1; i >= 0; i--) {
       let rname = this._preserveRegisters[i];
       this.writeRegister(rname, this.pop(numericTypeToObject[this.registerMap[rname].type]));
     }
     // Pop subroutine args
-    const argBytes = this.pop(numericTypeToObject["uint32"]);
-    for (let i = 0; i < argBytes; i++) this.pop(numericTypeToObject["int8"]);
+    const nArgBytes = this.pop(this.numType);
+    for (let i = 0; i < nArgBytes; i++) this.pop(numericTypeToObject["int8"]);
     // Reset frame pointer
     this.writeRegister(this.regFramePtr, fpAddr + sfs);
+  }
+
+  // Read memory from address as if it was a stack frame (address - acts as FRAME_POINTER register value)
+  public readFrame(addr: number) {
+    const frame: any = { [this.regFramePtr]: { value: addr, desc: 'Points to top of current stack frame', type: numericTypeToObject[this.registerMap[this.regFramePtr].type] } };
+    try {
+      let type;
+      type = numericTypeToObject["uint32"]; // Stack frame size is always uint32
+      const size = this.readMemory(addr, type);
+      frame.size = { value: size, desc: 'Last stack frame size', type, addr };
+      addr += type.bytes; // StackFrameSize is always uint32
+    
+      type = numericTypeToObject[this.registerMap[this.regInstructionPtr].type];
+      const ip = this.readMemory(addr, type);
+      frame[this.regInstructionPtr] = { value: ip, desc: 'Instruction Pointer', type, addr };
+      addr += type.bytes;
+
+      for (let i = this._preserveRegisters.length - 1; i >= 0; i--) {
+        let rname = this._preserveRegisters[i];
+        type = numericTypeToObject[this.registerMap[rname].type];
+        const value = this.readMemory(addr, type);
+        frame[rname] = { value, desc: `Restore Register: ${rname}`, type, addr };
+        addr += type.bytes;
+      }
+
+      type = this.numType;
+      const argBytes = this.readMemory(addr, type);
+      frame.argBytes = { value: argBytes, desc: `Bytelength of arguments passed to subroutine`, type, addr };
+      addr += type.bytes;
+
+      const args = new ArrayBuffer(argBytes), argdv = new DataView(args);
+      type = numericTypeToObject["uint8"];
+      frame.args = { value: args, desc: `Array of argument bytes`, type, addr };
+      for (let i = 0, off = 0; i < argBytes; i++) {
+        const arg = this.readMemory(addr, type);
+        addr += type.bytes;
+        argdv[type.setMethod](off, arg);
+        off += type.bytes;
+      }
+    } catch (e) {
+      console.warn(e);
+      return false;
+    }
+
+    return frame;
   }
 
   /** Get next word in memory, and increment IP */

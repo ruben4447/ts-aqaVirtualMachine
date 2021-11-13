@@ -38,6 +38,15 @@ export interface IMemoryTabProperties {
   updateMemoryViewOnMemoryWrite: boolean;
 }
 
+/** Properties for tab:"stack" */
+export interface IStackTabProperties {
+  generateBtn: HTMLButtonElement;
+  tableStack: HTMLTableElement;
+  tableStackFrames: HTMLTableElement;
+  update: () => void;
+  popupStackFrameStructure: Popup;
+}
+
 /** Properties for tab:"run" */
 export interface IRunTabProperties {
   feedbackScreen: CustomScreen;

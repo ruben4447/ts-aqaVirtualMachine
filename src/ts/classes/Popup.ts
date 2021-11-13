@@ -33,6 +33,12 @@ export default class Popup {
     return this;
   }
 
+  insertAdjacentHTML(position: InsertPosition, html: string) {
+    if (!this._htmlContent) this._htmlContent = document.createElement('div');
+    this._htmlContent.insertAdjacentHTML(position, html);
+    return this;
+  }
+
   insertAdjacentText(position: InsertPosition, text: string) {
     if (!this._htmlContent) this._htmlContent = document.createElement('div');
     this._htmlContent.insertAdjacentText(position, text);

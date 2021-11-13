@@ -38,5 +38,5 @@ A new stack frame is created on a call to `cal` and has the following structure:
 - `size of stack frame -> uint32`
 - `return address -> (sizeof IP register)` - address where IP is set to upon `ret`
 - `...registers` - registers that are marked `preserve: true`
-- `argc -> uint32` - argument count to subroutine, in bytes [**PUSHED BY USER**]
-- `...argv` - sequence of `argc` values acting as arguments. [**PUSHED BY USER**]
+- `argc -> (native machine type)` - bytelength of arguments [**PUSHED BY USER**]
+- `...argv` - sequence of `argc` bytes acting as arguments. [**PUSHED BY USER**]

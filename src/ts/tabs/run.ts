@@ -192,7 +192,7 @@ function displayExecInfo(info: IExecuteRecord) {
     else if (t === AssemblerType.Address) type = globals.cpu.addrType;
     else if (t === "opcode") type = globals.cpu.instructType;
     else if (t === "ip") type = numericTypeToObject[globals.cpu.registerMap[globals.cpu.regInstructionPtr].type];
-    else type = numericTypeToObject[numberTypeMap[info.type]];
+    else type = info.type === undefined ? globals.cpu.numType : numericTypeToObject[numberTypeMap[info.type]];
     return numberToString(type, n, 16);
   };
 
