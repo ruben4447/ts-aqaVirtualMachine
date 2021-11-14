@@ -72,7 +72,6 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   globals.cpu = cpu;
   globals.instructionSet = instructionSet;
   const assembler = new Assembler(cpu, instructionSet);
-  assembler.replaceCommandMap = globals.asmReplaceCommandsMap;
   globals.assembler = assembler;
 
   // SET UP TABS
@@ -133,15 +132,6 @@ function __app_main_() {
   tabCode.properties.insertHalt = false;
   // tabCode.properties.partailTranslationWrapper.style.display = "none";
 
-  // Set up pre-assembly command replation object
-  [
-    ['B', 'JMP', 'Jump to [label]'],
-    ['BEQ', 'JEQ', 'Jump to [label] if CMP is \'equal to\''],
-    ['BNE', 'JNE', 'Jump to [label] if CMP is not \'equal to\''],
-    ['BLT', 'JLT', 'Jump to [label] if CMP is \'less than\''],
-    ['BGT', 'JGT', 'Jump to [label] if CMP is \'greater to\''],
-  ].forEach(([cmd, replaceWith, description]) => globals.asmReplaceCommandsMap[cmd] = { replaceWith, description });
-
   // Initiate application
   __app_init_(CPUModel.AQAARMExt, {
     numType: 'int16'
@@ -152,62 +142,14 @@ function __app_main_() {
 
   globals.tabs._.open("code");
 
-//   tabCode.properties.assemblyCodeInput.value = `
-// movi64 r10, #xfffffffff
-// movi64 r11, #xdeeeeeeee
-// and r10, r11
-// hlt
-//   `.trim();
-
   //   tabCode.properties.assemblyCodeInput.value = `
-  // main:
-  //   push #5     ; Push 5 as argument
-  //   push #1     ; Push number of arguments
-  //   call square
-  //   hlt
-
-  // square:
-  //   add sp, #12     ; Adjust to location of argument
-  //   mov acc, *acc
-  //   mul acc, acc
-  //   ret
+  // movi64 r10, #xfffffffff
+  // movi64 r11, #xdeeeeeeee
+  // and r10, r11
+  // hlt
   //   `.trim();
-//   tabCode.properties.assemblyCodeInput.value = `
-// MOV R1, #69
-// MOV R2, #24
-// loop:
-// CMP R1, R2
-// BEQ end
-// BGT if
-// else:
-// SUB R2, R2, R1
-// B loop
-// if:
-// SUB R1, R1, R2
-// B loop
-// end:
-// HALT`.trim();
-  tabCode.properties.assemblyCodeInput.value = `
-PSH #2
-PSH #2
-CAL sub1
-HALT
-
-sub1:
-PSH #0
-CAL sub2
-RET
-
-sub2:
-PSH #8
-BRK
-RET
-  `.trim();
-  tabCode.compileAssembly();
-  tabCode.loadMachineCodeToMemory(0);
-  tabRun.run();
-  globals.tabs._.open("stack");
-  tabStack.update();
+  // tabCode.compileAssembly();
+  // tabCode.loadMachineCodeToMemory(0);
 }
 
 window.addEventListener('load', () => {

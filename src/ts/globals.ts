@@ -13,7 +13,6 @@ interface IGlobals {
   base: number; // Base to view numbers in
   cpu: CPU; // Main CPU
   assembler: Assembler; // Main assembler
-  asmReplaceCommandsMap: IReplaceCommandMap;
   output: CustomScreen; // Main output console
   tabs: {
     _: Tabs; // Tab manager

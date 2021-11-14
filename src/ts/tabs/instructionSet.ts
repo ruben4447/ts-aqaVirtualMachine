@@ -92,22 +92,6 @@ function generateOrderByHTML() {
   return span;
 }
 
-/** DIV containing information on Branch commands */
-function generateCommandReplaceDescriptions() {
-  const div = document.createElement('div');
-  div.insertAdjacentHTML("beforeend", "<p>These commands are replaced pre-assembly. They take the same arguments as the one they will be replaces with.</p>");
-  const table = document.createElement('table');
-  div.appendChild(table);
-  table.insertAdjacentHTML(`beforeend`, `<tr><th>Command</th><th>Replace With</th><th>Description</th></tr>`);
-  for (let command in globals.asmReplaceCommandsMap) {
-    if (globals.asmReplaceCommandsMap.hasOwnProperty(command)) {
-      let info = globals.asmReplaceCommandsMap[command];
-      table.insertAdjacentHTML(`beforeend`, `<tr><td>${command}</td><td>${info.replaceWith}</td><td>${info.description}</td></tr>`);
-    }
-  }
-  return div;
-}
-
 export function init() {
   const content = document.createElement("div");
   info.content = content;
@@ -121,5 +105,4 @@ export function init() {
   properties.instructionSetDivWrapper = document.createElement('div');
   content.appendChild(properties.instructionSetDivWrapper);
   properties.instructionSetDivWrapper.appendChild(generateAssemblerInstructionSetHTML());
-  content.appendChild(generateCommandReplaceDescriptions());
 }

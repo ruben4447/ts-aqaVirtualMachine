@@ -56,7 +56,3 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
 export interface IAssemblyLabelDeclarationLine extends IAssemblyLine {
   label: string;
 }
-
-export interface IReplaceCommandMap {
-  [command: string]: { replaceWith: string, description: string }
-}

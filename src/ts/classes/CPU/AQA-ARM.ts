@@ -15,7 +15,6 @@ export class ARMProcessor extends CPU {
     // Call super's constructor, but wih our defaults
     config.appendRegisterMap = { ...config.appendRegisterMap, cmp: createRegister(16, 'uint8', false, 'Holds current comparison data') };
     super(instructionSet ?? aqaInstructionSet, config, ARMProcessor.defaultNumType);
-
     this.resetRegisters();
   }
 
@@ -424,8 +423,8 @@ export class ARMProcessor extends CPU {
         this.writeRegister(register1, result);
         break;
       }
-      case this.instructionSet.JMP_CONST: {
-        // JMP constant
+      case this.instructionSet.B_CONST: {
+        // B constant
         const constant = this.fetch();
         info.args = [constant];
         if (this.executionConfig.commentary) {
@@ -434,8 +433,8 @@ export class ARMProcessor extends CPU {
         this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
-      case this.instructionSet.JMP_REG: {
-        // JMP register
+      case this.instructionSet.B_REG: {
+        // B register
         const register = this.fetch(), registerVal = this.readRegister(register);
         info.args = [register];
         if (this.executionConfig.commentary) {
@@ -444,8 +443,8 @@ export class ARMProcessor extends CPU {
         this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
-      case this.instructionSet.JEQ_CONST: {
-        // JEQ constant
+      case this.instructionSet.BEQ_CONST: {
+        // BEQ constant
         const constant = this.fetch();
         info.args = [constant];
         const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
@@ -455,8 +454,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
-      case this.instructionSet.JEG_REG: {
-        // JEQ register
+      case this.instructionSet.BEG_REG: {
+        // BEQ register
         const register = this.fetch(), registerVal = this.readRegister(register);
         info.args = [register];
         const condition = this.readRegister("cmp") === CMP.EQUAL_TO;
@@ -466,8 +465,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
-      case this.instructionSet.JNE_CONST: {
-        // JNE constant
+      case this.instructionSet.BNE_CONST: {
+        // BNE constant
         const constant = this.fetch();
         info.args = [constant];
         const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
@@ -477,8 +476,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
-      case this.instructionSet.JNE_REG: {
-        // JNE register
+      case this.instructionSet.BNE_REG: {
+        // BNE register
         const register = this.fetch(), registerVal = this.readRegister(register);
         info.args = [register];
         const condition = this.readRegister("cmp") !== CMP.EQUAL_TO;
@@ -488,8 +487,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
-      case this.instructionSet.JLT_CONST: {
-        // JLT constant
+      case this.instructionSet.BLT_CONST: {
+        // BLT constant
         const constant = this.fetch();
         info.args = [constant];
         const condition = this.readRegister("cmp") === CMP.LESS_THAN;
@@ -499,8 +498,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
-      case this.instructionSet.JLT_REG: {
-        // JLT register
+      case this.instructionSet.BLT_REG: {
+        // BLT register
         const register = this.fetch(), registerVal = this.readRegister(register);
         info.args = [register];
         const condition = this.readRegister("cmp") === CMP.LESS_THAN;
@@ -510,8 +509,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, registerVal);
         break;
       }
-      case this.instructionSet.JGT_CONST: {
-        // JGT constant
+      case this.instructionSet.BGT_CONST: {
+        // BGT constant
         const constant = this.fetch();
         info.args = [constant];
         const condition = this.readRegister("cmp") === CMP.GREATER_THAN;
@@ -521,8 +520,8 @@ export class ARMProcessor extends CPU {
         if (condition) this.writeRegister(this.regInstructionPtr, constant);
         break;
       }
-      case this.instructionSet.JGT_REG: {
-        // JGT register
+      case this.instructionSet.BGT_REG: {
+        // BGT register
         const register = this.fetch(), registerVal = this.readRegister(register);
         info.args = [register];
         const condition = this.readRegister("cmp") === CMP.GREATER_THAN;

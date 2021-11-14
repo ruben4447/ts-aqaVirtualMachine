@@ -1,5 +1,5 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine, IReplaceCommandMap } from "../types/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine } from "../types/Assembler";
 import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
 import { INumberType, NumberType } from "../types/general";
@@ -68,7 +68,6 @@ export class Assembler {
   private _symbols: Map<string, string> = new Map();
   public startAddress = 0;
   public removeNOPs: boolean = false;
-  public replaceCommandMap: IReplaceCommandMap = {};
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
@@ -442,8 +441,6 @@ export class Assembler {
    * Syntax: <mnemonic>[ntype]
   */
   private _getInstructionFromString(string: string): { instruction: string, ntype: NumberType } | null {
-    // Replace command via replaceCommandMap?
-    if (string in this.replaceCommandMap) string = this.replaceCommandMap[string].replaceWith;
     const stringL = string.toLowerCase();
     for (let instruction in this._imap) {
       if (this._imap.hasOwnProperty(instruction)) {

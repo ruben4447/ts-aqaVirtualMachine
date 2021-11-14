@@ -249,75 +249,75 @@ export const instructionSet: IInstructionSet = {
   // #endregion
 
   // #region IP Manipulation (0x6-)
-  JMP_CONST: {
-    mnemonic: "JMP",
-    opcode: 0x60,
-    args: [AssemblerType.Constant],
-    desc: "Set instruction pointer to constant [constant]",
-    isAQA: false,
-  },
-  JMP_REG: {
-    mnemonic: "JMP",
-    opcode: 0x61,
-    args: [AssemblerType.Register],
-    desc: "Set instruction pointer to register [register]",
-    isAQA: false,
-  },
-  JEQ_CONST: {
-    mnemonic: "JEQ",
+  BEQ_CONST: {
+    mnemonic: "BEQ",
     opcode: 0x62,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Equal To'",
-    isAQA: false,
+    isAQA: true,
   },
-  JEQ_REG: {
-    mnemonic: "JEQ",
+  BEQ_REG: {
+    mnemonic: "BEQ",
     opcode: 0x63,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Equal To'",
-    isAQA: false,
+    isAQA: true,
   },
-  JNE_CONST: {
-    mnemonic: "JNE",
+  BNE_CONST: {
+    mnemonic: "BNE",
     opcode: 0x64,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Not Equal To'",
-    isAQA: false,
+    isAQA: true,
   },
-  JNE_REG: {
-    mnemonic: "JNE",
+  BNE_REG: {
+    mnemonic: "BNE",
     opcode: 0x65,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Not Equal To'",
-    isAQA: false,
+    isAQA: true,
   },
-  JLT_REG: {
-    mnemonic: "JLT",
+  BLT_REG: {
+    mnemonic: "BLT",
     opcode: 0x66,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Less Than'",
-    isAQA: false,
+    isAQA: true,
   },
-  JLT_CONST: {
-    mnemonic: "JLT",
+  BLT_CONST: {
+    mnemonic: "BLT",
     opcode: 0x67,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Less Than'",
-    isAQA: false,
+    isAQA: true,
   },
-  JGT_REG: {
-    mnemonic: "JGT",
+  BGT_REG: {
+    mnemonic: "BGT",
     opcode: 0x68,
     args: [AssemblerType.Register],
     desc: "Set instruction pointer to register [register] if comparison is 'Greater Than'",
-    isAQA: false,
+    isAQA: true,
   },
-  JGT_CONST: {
-    mnemonic: "JGT",
+  BGT_CONST: {
+    mnemonic: "BGT",
     opcode: 0x69,
     args: [AssemblerType.Constant],
     desc: "Set instruction pointer to constant [constant] if comparison is 'Greater Than'",
-    isAQA: false,
+    isAQA: true,
+  },
+  B_CONST: {
+    mnemonic: "B",
+    opcode: 0x60,
+    args: [AssemblerType.Constant],
+    desc: "Set instruction pointer to constant [constant]",
+    isAQA: true,
+  },
+  B_REG: {
+    mnemonic: "B",
+    opcode: 0x61,
+    args: [AssemblerType.Register],
+    desc: "Set instruction pointer to register [register]",
+    isAQA: true,
   },
   // #endregion
 
