@@ -22,6 +22,7 @@ import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
+import { parseByteList } from "./utils/Assembler";
 globalThis.utils = utils;
 
 /**
@@ -150,6 +151,13 @@ function __app_main_() {
   //   `.trim();
   // tabCode.compileAssembly();
   // tabCode.loadMachineCodeToMemory(0);
+  tabCode.properties.assemblyCodeInput.value = `
+OUTSTR msg
+HALT
+msg:
+.bytes "Hello", 0
+`.trim();
+  tabCode.compileAssembly();
 }
 
 window.addEventListener('load', () => {

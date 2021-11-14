@@ -1,10 +1,10 @@
 ; Execute fibonacci sequence
-#define A r1
-#define B r2
-#define TMP r3
-#define CYCLE_COUNT r5
-#define CURRENT_CYCLE r6
-#define OUT r7
+.equ A r1
+.equ B r2
+.equ TMP r3
+.equ CYCLE_COUNT r5
+.equ CURRENT_CYCLE r6
+.equ OUT r7
 
 start:
 MOV A, #00 ; a

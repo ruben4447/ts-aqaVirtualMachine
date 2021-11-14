@@ -49,9 +49,45 @@ These may be used in place of constant value
 
 SYNTAX: `'<character>'`, where `<character>` is any ascii characters. THe program will convert this to its ASCII code and substitute this as the constant value e.g, `MOV r1, 'A'` == `MOV r1, #65`
 
+### `$`
+The `$` token represents the current memory address at the beginning of the line *i.e.* `B $` causes an infinite loop.
+
 ## Labels
 These are markers defined in a program and can be branched to to allow control flow
 
 SYNTAX: `<label_name>:` (note: must be on a single line)
 
 The branching commands are `B, BEQ, BNE, BLT, BGT` and the syntax is `<branch_command> <label_name>`
+
+## Directives
+SYNTAX: `.<directive> ...`
+
+### `.bytes`
+SYNTAX `.data <bytelist>`
+
+Inserts `bytelist` (see `.data`) into memory at current address as `uint8`s
+
+### `.data`
+SYNTAX `.data <bytelist>`
+
+`bytelist` is a comma-seperated sequence of bytes, including:
+- Constants `0<base><digits>`
+- Characters `'<character>'`
+- Strings `"<character>[]"`
+
+Inserts `bytelist` into memory at current address as process-typed words
+
+### `.equ`
+SYNTAX `.equ <name> <value>`
+
+Defines constant `name`. Assembler replaces all instances of `name` with un-processed `value`.
+
+### `.skip`
+SYNTAX `.skip`
+
+Assembler skips the next line.
+
+### `.stop`
+SYNTAX `.stop`
+
+Halts the assembler. Everything processed up to this point is still kept.

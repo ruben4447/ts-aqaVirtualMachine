@@ -1,6 +1,6 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblySymbolDeclarationLine } from "../types/Assembler";
-import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblySymbolDeclarationLine, IAssemblyBytesDeclarationLine } from "../types/Assembler";
+import { decodeEscapeSequence, isValidSymbol, label_regex, matchesTypeSignature, parseByteList, parseCharLit } from "../utils/Assembler";
 import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
 import { INumberType, NumberType } from "../types/general";
 
@@ -126,12 +126,10 @@ export class Assembler {
   private _parseToAST(assembly: string): IAssemblyLine[] {
     const ast: IAssemblyLine[] = [];
 
-    const lines = assembly.split(/\r|\n|\r\n/g);
+    const lines = assembly.split(/\r|\n|\r\n/g).map(line => line.replace(/;.*$/g, '').trim()).filter(line => line.length > 0);
     for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
       try {
-        let line = lines[i].trim();
-        line = line.replace(/;.*$/g, ''); // Remove comments
-        if (line.length === 0) continue;
         const parts = line.replace(/,/g, ' ').split(/\s+/g).filter(x => x.length > 0);
 
         // If instruction...
@@ -170,34 +168,44 @@ export class Assembler {
             error.setUnderlineString(line);
             throw error;
           }
-        } else if (parts[0][0] === '#') {
-          let directive = parts[0].substr(1);
-
-          if (directive === 'stop') { // Stop parsing
+        } else if (parts[0][0] === '.') {
+          let cmd = parts[0].substr(1);
+          if (cmd === 'stop') {
             break;
-          } else if (directive === 'skip') { // Skip next line
+          } else if (cmd === 'skip') {
             i++;
             continue;
-          } else if (directive === 'define') {
+          } else if (cmd === 'data' || cmd === 'bytes') { // Place following words into memory
+            let raw = line.substr(parts[0].length).trimStart(), bytes: number[];
+            try {
+              bytes = parseByteList(raw);
+            } catch (e) {
+              const error = new AssemblerError(`Syntax Error: invalid data list`, raw);
+              error.appendMessage(e.message);
+              error.setUnderlineString(line);
+              throw error;
+            }
+            const ntype = cmd === 'data' ? this._cpu.numType : numericTypeToObject["uint8"];
+            const buffer = new ArrayBuffer(bytes.length * ntype.bytes), dataview = new DataView(buffer);
+            // Fill buffer
+            for (let i = 0, off = 0; i < bytes.length; i++, off += ntype.bytes) {
+              dataview[ntype.setMethod](off, bytes[i]);
+            }
+            const instructionLine: IAssemblyBytesDeclarationLine = { type: AssemblyLineType.Data, data: buffer };
+            ast.push(instructionLine);
+          } else if (cmd === 'equ') { // Define constant
             // Valid name?
             if (isValidSymbol(parts[1])) {
-              // Already defined?
-              if (this._symbols.has(parts[1])) {
-                const error = new AssemblerError(`SYMBOL: '${parts[1]}' symbol redeclared`, parts[1]);
-                error.setUnderlineString(line);
-                throw error;
-              } else {
-                let string = line.substr("#define".length);
-                string = string.substr(string.indexOf(parts[1]) + parts[1].length).trim();
-                this._symbols.set(parts[1], string);
-              }
+              let string = line.substr(".equ".length);
+              string = string.substr(string.indexOf(parts[1]) + parts[1].length).trim();
+              this._symbols.set(parts[1], string);
             } else {
               const error = new AssemblerError(`Syntax Error: invalid syntax: expected symbol`, parts[1]);
               error.setUnderlineString(line);
               throw error;
             }
           } else {
-            const error = new AssemblerError(`Syntax Error: unknown directive`, directive);
+            const error = new AssemblerError(`Syntax Error: unknown dot directive`, cmd);
             error.setUnderlineString(line);
             throw error;
           }
@@ -239,6 +247,8 @@ export class Assembler {
           bytes += numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes;
           // console.log(`${line.instruction}: arg: + ${numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes}`, arg)
         });
+      } else if (line.type === AssemblyLineType.Data) {
+        bytes += (line as IAssemblyBytesDeclarationLine).data.byteLength;
       }
     });
     buff = new ArrayBuffer(bytes);
@@ -250,9 +260,14 @@ export class Assembler {
       if (line.type === AssemblyLineType.Symbol) {
         this._symbols.set((line as IAssemblySymbolDeclarationLine).symbol, address.toString());
       } else if (line.type === AssemblyLineType.Instruction) {
+        const startAddress = address;
         address += this._cpu.instructType.bytes;
         if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) bytes++;
         line.args.forEach(arg => {
+          if (arg.type === AssemblerType.Symbol && arg.value === '$') {
+            arg.num = startAddress;
+            arg.type = AssemblerType.Constant;
+          }
           address += numericTypeToObject[arg.ntype].bytes;
         });
       }
@@ -289,7 +304,15 @@ export class Assembler {
             dv[typeObj.setMethod](byteOffset, arg.num); // Add argument's numeric representation to memory
             byteOffset += typeObj.bytes;
           });
-        } else if (line.type === AssemblyLineType.Symbol) { } else {
+        } else if (line.type === AssemblyLineType.Symbol) { }
+        else if (line.type === AssemblyLineType.Data) {
+          const dataline = line as IAssemblyBytesDeclarationLine;
+          let dataDV = new DataView(dataline.data);
+          for (let off = 0; off < dataDV.byteLength; off++) {
+            dv.setUint8(byteOffset + off, dataDV.getUint8(off));
+          }
+          byteOffset += dataDV.byteLength;
+        } else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
           error.setUnderlineString(json);
@@ -385,12 +408,15 @@ export class Assembler {
       }
     } else if (argument[0] == '\'') {
       if (argument[argument.length - 1] !== '\'') throw new AssemblerError(`Syntax Error: unclosed character literal`, argument);
-      let content = argument.substr(1, argument.length - 2);
-      if (content.length > 1) throw new AssemblerError(`Syntax Error: charcater literal too large`, content);
-      let num = argument[1].charCodeAt(0);
+      let content = argument.substr(1, argument.length - 2), char;
+      try {
+        char = parseCharLit(content);
+      } catch (e) {
+        throw new AssemblerError(`Syntax Error: Invalid character literal: ${e.message}`, content);
+      }
       token.type = AssemblerType.Constant;
-      token.value = argument[1];
-      token.num = num;
+      token.value = char;
+      token.num = char.charCodeAt(0);
       return token;
     } else {
       const registerMeta = this._cpu.registerMap[argument.toLowerCase()];

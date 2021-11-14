@@ -125,10 +125,11 @@ export class ARMProcessorExtended extends ARMProcessor {
             if (n === 0) break;
             string += String.fromCharCode(n);
           }
+          let addrHex = this.toHex(address);
           if (this.executionConfig.commentary) {
-            info.text = `Output memory as null-terminated string from address 0x${this.toHex(address)} - string of length ${string.length}`;
+            info.text = `Output memory as null-terminated string from address 0x${addrHex} - string of length ${string.length}`;
           }
-          let output = `[STDOUT: address 0x${this._registerOffsets[address]}] >> ${string}`;
+          let output = `[STDOUT: address 0x${addrHex}] >> ${string}`;
           globalThis.alert(output);
           console.log(output);
           break;

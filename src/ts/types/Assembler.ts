@@ -22,6 +22,7 @@ export enum AssemblerType {
 export enum AssemblyLineType {
   Instruction,
   Symbol,
+  Data,
 };
 
 /** Interface describing Assembler instruction map */
@@ -55,4 +56,9 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
 /** Represent an assembly symbol declaration line "<symbol>: ..." */
 export interface IAssemblySymbolDeclarationLine extends IAssemblyLine {
   symbol: string;
+}
+
+/** Represent an assembly data declaration line */
+export interface IAssemblyBytesDeclarationLine extends IAssemblyLine {
+  data: ArrayBuffer;
 }
