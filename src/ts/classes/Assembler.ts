@@ -492,35 +492,6 @@ export class Assembler {
             let info = this._imap[mnemonic], line = [info.mnemonic], skipMain = false;
             i++;
 
-            if (useLabels) {
-              if (mnemonic === 'JMP_CONST') {
-                skipMain = true;
-                let label = `label${currentLabelN++}`;
-                this._labels.set(label, numbers[i++]);
-                line = ['B', label];
-              } else if (mnemonic === 'JEQ_CONST') {
-                skipMain = true;
-                let label = `label${currentLabelN++}`;
-                this._labels.set(label, numbers[i++]);
-                line = ['BEQ', label];
-              } else if (mnemonic === 'JNE_CONST') {
-                skipMain = true;
-                let label = `label${currentLabelN++}`;
-                this._labels.set(label, numbers[i++]);
-                line = ['BNE', label];
-              } else if (mnemonic === 'JLT_CONST') {
-                skipMain = true;
-                let label = `label${currentLabelN++}`;
-                this._labels.set(label, numbers[i++]);
-                line = ["BLT", label];
-              } else if (mnemonic === 'JGT_CONST') {
-                skipMain = true;
-                let label = `label${currentLabelN++}`;
-                this._labels.set(label, numbers[i++]);
-                line = ["BGT", label];
-              }
-            }
-
             // "Main Block" -> parse arguments
             if (!skipMain) {
               for (let j = 0; j < info.args.length; i++, j++) {
