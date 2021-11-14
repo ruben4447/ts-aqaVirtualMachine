@@ -20,7 +20,6 @@ export interface ICodeTabProperties {
   assemblyCodeInput: HTMLTextAreaElement;
   partailTranslationWrapper: HTMLDivElement;
   partialTranslatedInput: HTMLTextAreaElement;
-  labelTable: HTMLTableSectionElement;
   symbolTable: HTMLTableSectionElement;
   machineCode: ArrayBuffer;
   machineCodeInput: HTMLTextAreaElement;

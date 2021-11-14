@@ -21,7 +21,7 @@ export enum AssemblerType {
 /** Type of line in assembly AST */
 export enum AssemblyLineType {
   Instruction,
-  Label,
+  Symbol,
 };
 
 /** Interface describing Assembler instruction map */
@@ -52,7 +52,7 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
   args: Array<IAssemblerToken>;
 }
 
-/** Represent an assembly label declaration line */
-export interface IAssemblyLabelDeclarationLine extends IAssemblyLine {
-  label: string;
+/** Represent an assembly symbol declaration line "<symbol>: ..." */
+export interface IAssemblySymbolDeclarationLine extends IAssemblyLine {
+  symbol: string;
 }

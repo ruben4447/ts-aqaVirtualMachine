@@ -1,5 +1,5 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblyLabelDeclarationLine } from "../types/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblySymbolDeclarationLine } from "../types/Assembler";
 import { isValidSymbol, label_regex, matchesTypeSignature } from "../utils/Assembler";
 import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
 import { INumberType, NumberType } from "../types/general";
@@ -78,16 +78,14 @@ export class Assembler {
     this._assembly = code;
     this._ast = undefined;
     this._bytes = undefined;
-    this._labels.clear();
     this._symbols.clear();
   }
 
   public getAssemblyCode(): string { return this._assembly; }
   public getAST(): IAssemblyLine[] | undefined { return this._ast; }
   public getBytes(): ArrayBuffer | undefined { return this._bytes; }
-  public getLabels(): [string, number][] { return Array.from(this._labels.entries()); }
   public getSymbols(): [string, string][] { return Array.from(this._symbols.entries()); }
-  public getLabel(label: string): number | undefined { return this._labels.get(label); }
+  public getSymbol(symbol: string): string | undefined { return this._symbols.get(symbol); }
 
   /**
    * Parse assembly code string
@@ -96,7 +94,6 @@ export class Assembler {
    */
   public parse(assembly: string, origin: string = "<anonymous>"): void {
     let ast: IAssemblyLine[], buff: ArrayBuffer;
-    this._labels.clear();
     this._symbols.clear();
 
     try {
@@ -161,7 +158,7 @@ export class Assembler {
           const label = parts[0].substr(0, parts[0].length - 1);
           if (parts.length === 1) {
             if (isValidSymbol(label)) {
-              const labelLine: IAssemblyLabelDeclarationLine = { type: AssemblyLineType.Label, label, };
+              const labelLine: IAssemblySymbolDeclarationLine = { type: AssemblyLineType.Symbol, symbol: label, };
               ast.push(labelLine);
             } else {
               const error = new AssemblerError(`Syntax Error: invalid label; must match ${label_regex}`, label);
@@ -224,7 +221,6 @@ export class Assembler {
 
   /**
    * Parse AST, return number[] array of "bytes"
-   * Populate this._labels
    */
   private _astToBuffer(ast: IAssemblyLine[]): ArrayBuffer {
     let buff: ArrayBuffer, dv: DataView, bytes = 0;
@@ -251,8 +247,8 @@ export class Assembler {
     // Resolve label addresses
     for (let i = 0; i < ast.length; i++) {
       const line = ast[i];
-      if (line.type === AssemblyLineType.Label) {
-        this._labels.set((line as IAssemblyLabelDeclarationLine).label, address);
+      if (line.type === AssemblyLineType.Symbol) {
+        this._symbols.set((line as IAssemblySymbolDeclarationLine).symbol, address.toString());
       } else if (line.type === AssemblyLineType.Instruction) {
         address += this._cpu.instructType.bytes;
         if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) bytes++;
@@ -267,7 +263,7 @@ export class Assembler {
       if (line.args) line.args.forEach((arg, i) => {
         if (arg.type === AssemblerType.Symbol) {
           arg.type = AssemblerType.Address;
-          if (this._labels.has(arg.value)) arg.num = this._labels.get(arg.value);
+          if (this._symbols.has(arg.value)) arg.num = +this._symbols.get(arg.value);
           else throw new AssemblerError(`'${line.instruction}' operand ${i}: SYMBOL: Cannot find symbol '${arg.value}'`, arg.value);
         }
       });
@@ -293,7 +289,7 @@ export class Assembler {
             dv[typeObj.setMethod](byteOffset, arg.num); // Add argument's numeric representation to memory
             byteOffset += typeObj.bytes;
           });
-        } else if (line.type === AssemblyLineType.Label) { } else {
+        } else if (line.type === AssemblyLineType.Symbol) { } else {
           let json = JSON.stringify(line);
           const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
           error.setUnderlineString(json);
@@ -481,7 +477,7 @@ export class Assembler {
     this._assembly = '';
     const numbers = bufferToArray(bytes, this._cpu.numType);
     const lines: string[][] = [];
-    this._labels.clear();
+    this._symbols.clear();
     let currentLabelN = 1;
 
     for (let i = 0; i < numbers.length;) {
@@ -540,12 +536,12 @@ export class Assembler {
       }
     }
 
-    // Place labels into array
-    this._labels.forEach((addr, label) => {
+    // Place symbols into array
+    this._symbols.forEach((addr, symbol) => {
       for (let i = 0, k = 0; i < lines.length; i++) {
         for (let j = 0; j < lines[i].length; j++, k++) {
-          if (k === this._labels.get(label)) {
-            lines.splice(i, 0, [label + ':']);
+          if (k === +this._symbols.get(symbol)) {
+            lines.splice(i, 0, [symbol + ':']);
           }
         }
       }

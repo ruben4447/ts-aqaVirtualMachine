@@ -16,7 +16,6 @@ export const properties: ICodeTabProperties = {
   assemblyCodeInput: undefined,
   partailTranslationWrapper: undefined,
   partialTranslatedInput: undefined,
-  labelTable: undefined,
   symbolTable: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
@@ -122,16 +121,6 @@ function generatePartialHTML() {
   textarea.rows = 10;
   textarea.cols = 100;
 
-  // Label table
-  td = document.createElement('td');
-  tr.appendChild(td);
-  const labelTable = document.createElement("table");
-  td.appendChild(labelTable);
-  labelTable.insertAdjacentHTML('beforeend', `<thead><tr><th>Label</th><th>Address</th></tr></thead>`);
-  const labelTbody = document.createElement("tbody");
-  labelTable.appendChild(labelTbody);
-  properties.labelTable = labelTbody;
-
   // Symbol table
   td = document.createElement('td');
   tr.appendChild(td);
@@ -143,13 +132,6 @@ function generatePartialHTML() {
   properties.symbolTable = symbolTbody;
 
   return wrapper;
-}
-
-function updateLabelTable() {
-  properties.labelTable.innerHTML = '';
-  globals.assembler.getLabels().forEach(([label, addr]) => {
-    properties.labelTable.insertAdjacentHTML('beforeend', `<tr><th>${label}</th><td><code>0x${addr.toString(16)}</code></td></tr>`);
-  });
 }
 
 function updateSymbolTable() {
@@ -330,7 +312,6 @@ export function decompileMachineCode() {
 }
 
 function displayPartialTranslation() {
-  updateLabelTable();
   updateSymbolTable();
   const lines = globals.assembler.getAST();
   const type = t => globals.cpu.instructTypeSuffixes ? `(${numericTypesAbbrEnum[t]})` : '';
