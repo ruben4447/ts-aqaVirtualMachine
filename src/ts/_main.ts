@@ -130,13 +130,13 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
 }
 
 function __app_main_() {
-  tabCode.properties.insertHalt = false;
-  // tabCode.properties.partailTranslationWrapper.style.display = "none";
-
   // Initiate application
   __app_init_(CPUModel.AQAARMExt, {
     numType: 'int16'
   });
+
+  tabCode.properties.insertHalt = false;
+  tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   // Prompt user
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\n";
@@ -149,15 +149,11 @@ function __app_main_() {
   // and r10, r11
   // hlt
   //   `.trim();
-  // tabCode.compileAssembly();
-  // tabCode.loadMachineCodeToMemory(0);
   tabCode.properties.assemblyCodeInput.value = `
-OUTSTR msg
-HALT
-msg:
-.bytes "Hello", 0
-`.trim();
+  SYSCALL #0
+  `.trim();
   tabCode.compileAssembly();
+  tabCode.loadMachineCodeToMemory(0);
 }
 
 window.addEventListener('load', () => {

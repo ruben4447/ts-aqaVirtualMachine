@@ -327,6 +327,14 @@ export class CPU {
     return frame;
   }
 
+  /** Syscall */
+  public syscall(arg) {
+    switch(arg) {
+      default:
+        throw new Error(`[SIGABRT] Unknown syscall ${arg}`);
+    }
+  }
+
   /** Get next word in memory, and increment IP */
   public fetch(numType?: INumberType): number {
     numType = numType ?? this.numType;

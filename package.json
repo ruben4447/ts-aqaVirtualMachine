@@ -2,7 +2,6 @@
   "name": "aqa-virtual-machine",
   "version": "1.0.0",
   "description": "",
-  "main": "build/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "parcel index.html",

@@ -376,7 +376,7 @@ export class ARMProcessorExtended extends ARMProcessor {
           // CAL register
           const register = this.fetch();
           const registerVal = this.readRegister(register);
-          info.args = [registerVal];
+          info.args = [register];
           this.pushFrame();
           this.writeRegister("ip", registerVal);
           if (this.executionConfig.commentary) {
@@ -394,6 +394,37 @@ export class ARMProcessorExtended extends ARMProcessor {
           } else {
             this.popFrame();
           }
+          break;
+        }
+        case this.instructionSet.SYSCALL_CONST: {
+          // SYSCALL constant
+          const constant = this.fetch();
+          let ret;
+          info.args = [constant];
+          if (this.executionConfig.commentary) {
+            info.text = `Invoke a system call with argument 0x${this.toHex(constant)}`;
+            ret = this.syscall(constant);
+            info.text += `\nReturn value: 0x${this.toHex(ret)} (in r1)`;
+          } else {
+            ret = this.syscall(constant);
+          }
+          this.writeRegister('r1', ret);
+          break;
+        }
+        case this.instructionSet.SYSCALL_REG: {
+          // SYSCALL register
+          const register = this.fetch();
+          const registerVal = this.readRegister(register);
+          let ret;
+          info.args = [register];
+          if (this.executionConfig.commentary) {
+            info.text = `Invoke a system call with argument 0x${this.toHex(registerVal)}`;
+            ret = this.syscall(registerVal);
+            info.text += `\nReturn value: 0x${this.toHex(ret)} (in r1)`;
+          } else {
+            ret = this.syscall(registerVal);
+          }
+          this.writeRegister('r1', ret);
           break;
         }
         case this.instructionSet.BRK: {

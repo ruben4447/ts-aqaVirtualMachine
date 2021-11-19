@@ -206,6 +206,18 @@ export const instructionSet: IInstructionSet = {
     args: [],
     desc: "Return from subroutine (used after CAL)",
   },
+  SYSCALL_CONST: {
+    mnemonic: "SYSCALL",
+    opcode: 0x36,
+    args: [AssemblerType.Constant],
+    desc: "Invoke a syscall with the argument [constant]",
+  },
+  SYSCALL_REG: {
+    mnemonic: "SYSCALL",
+    opcode: 0x37,
+    args: [AssemblerType.Register],
+    desc: "Invoke a syscall with the argument contents of [register]",
+  },
   //#endregion
 
   BRK: {
