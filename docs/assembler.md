@@ -80,6 +80,8 @@ Inserts `bytelist` into memory at current address as process-typed words
 ### `.equ`
 SYNTAX `.equ <name> <value>`
 
+**`<value>` is not evaluated in any way**
+
 Defines constant `name`. Assembler replaces all instances of `name` with un-processed `value`.
 
 ### `.skip`
@@ -91,3 +93,10 @@ Assembler skips the next line.
 SYNTAX `.stop`
 
 Halts the assembler. Everything processed up to this point is still kept.
+
+## Constants
+SYNTAX: `<name> equ <value>`
+
+**`<value>` IS PROCESSED**, unlike `.equ`
+
+Defines constant `name` with **processed** `value`. Assembler replaces all instances of `name` with this value.

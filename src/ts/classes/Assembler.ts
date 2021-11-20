@@ -3,6 +3,7 @@ import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAss
 import { decodeEscapeSequence, isValidSymbol, label_regex, matchesTypeSignature, parseByteList, parseCharLit } from "../utils/Assembler";
 import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
 import { INumberType, NumberType } from "../types/general";
+import { Expression } from "./Expression";
 
 export class AssemblerError extends Error {
   protected _messageStack: string[];
@@ -64,7 +65,6 @@ export class Assembler {
   private _assembly: string;
   private _ast: IAssemblyLine[];
   private _bytes: ArrayBuffer;
-  private _labels: Map<string, number> = new Map();
   private _symbols: Map<string, string> = new Map();
   public startAddress = 0;
   public removeNOPs: boolean = false;
@@ -165,6 +165,33 @@ export class Assembler {
             }
           } else {
             const error = new AssemblerError(`Syntax Error: Expected newline after label declaration`, parts[1]);
+            error.setUnderlineString(line);
+            throw error;
+          }
+        } else if (parts[1].toLowerCase() === 'equ') {
+          const name = parts[0];
+          if (isValidSymbol(name)) {
+            let string = line.substr(name.length + line.substr(name.length).indexOf('equ') + 3).trim();
+            const expr = new Expression(string);
+            this._symbols.forEach((value, key) => expr.setSymbol(key, +value));
+            try {
+              expr.parse();
+            } catch (e) {
+              const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, string);
+              error.appendMessage(e.message);
+              error.setUnderlineString(line);
+              throw error;
+            }
+            const result = expr.evaluate();
+            if (result.error) {
+              const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, string);
+              error.appendMessage(result.msg);
+              error.setUnderlineString(line);
+              throw error;
+            }
+            this._symbols.set(name, result.value.toString());
+          } else {
+            const error = new AssemblerError(`Syntax Error: invalid name; must match ${label_regex}`, name);
             error.setUnderlineString(line);
             throw error;
           }

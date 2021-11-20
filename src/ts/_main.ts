@@ -136,7 +136,7 @@ function __app_main_() {
   });
 
   tabCode.properties.insertHalt = false;
-  tabCode.properties.partailTranslationWrapper.style.display = "none";
+  // tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   // Prompt user
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\n";
@@ -150,7 +150,8 @@ function __app_main_() {
   // hlt
   //   `.trim();
   tabCode.properties.assemblyCodeInput.value = `
-  SYSCALL #0
+.equ one 2+2
+two equ 2+2
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
