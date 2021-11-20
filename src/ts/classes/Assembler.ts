@@ -63,7 +63,6 @@ export class Assembler {
   private _imap: IInstructionSet;
 
   private _assembly: string;
-  private _ast: IAssemblyLine[];
   private _bytes: ArrayBuffer;
   private _symbols: Map<string, string> = new Map();
   public startAddress = 0;
@@ -76,13 +75,11 @@ export class Assembler {
 
   public setAssemblyCode(code: string) {
     this._assembly = code;
-    this._ast = undefined;
     this._bytes = undefined;
     this._symbols.clear();
   }
 
   public getAssemblyCode(): string { return this._assembly; }
-  public getAST(): IAssemblyLine[] | undefined { return this._ast; }
   public getBytes(): ArrayBuffer | undefined { return this._bytes; }
   public getSymbols(): [string, string][] { return Array.from(this._symbols.entries()); }
   public getSymbol(symbol: string): string | undefined { return this._symbols.get(symbol); }
@@ -93,11 +90,9 @@ export class Assembler {
    * Results can be obtained via this.getAST() or this.getBytes()
    */
   public parse(assembly: string, origin: string = "<anonymous>"): void {
-    let ast: IAssemblyLine[], buff: ArrayBuffer;
-    this._symbols.clear();
-
+    let buff: ArrayBuffer;
     try {
-      ast = this._parseToAST(assembly);
+      buff = this._parse(assembly);
     } catch (e) {
       if (e instanceof AssemblerError) {
         e.fileName = origin;
@@ -105,59 +100,39 @@ export class Assembler {
       }
       throw e;
     }
-    this._ast = ast;
-
-    try {
-      buff = this._astToBuffer(ast);
-    } catch (e) {
-      if (e instanceof AssemblerError) {
-        e.fileName = origin;
-        e.insertMessage(`Fatal error whilst assembling AST:`);
-      }
-      throw e;
-    }
-
     this._bytes = buff;
   }
 
   /**
-   * Parse assembly string, return AST.
+   * FIRST PASS
+   * - Load all static things to memory
+   * - Remember location to insert labels
+   * SECOND PASS
+   * - Evaluate labels
+   * - Insert labels
    */
-  private _parseToAST(assembly: string): IAssemblyLine[] {
-    const ast: IAssemblyLine[] = [];
+  private _parse(assembly: string) {
+    this._symbols.clear();
+    this._symbols.set('WORD', this._cpu.numType.bytes.toString());
+    this._symbols.set('REGS', Object.keys(this._cpu.registerMap).length.toString());
+    const buff = new ArrayBuffer(Math.min(1.049e+6, this._cpu.memorySizeBytes())); // 1 MiB
+    const memory = new DataView(buff);
+    const symbolIndexes = new Map<number, { symbol: string, type: string, def: string }>(); // Map byteOffsets to insert each symbol
+    const symbolExprs = new Map<string, Expression>();
+    let byteOffset = 0;
 
     const lines = assembly.split(/\r|\n|\r\n/g).map(line => line.replace(/;.*$/g, '').trim()).filter(line => line.length > 0);
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
+      let line = lines[i], lineOffset = byteOffset;
       try {
         const parts = line.replace(/,/g, ' ').split(/\s+/g).filter(x => x.length > 0);
 
-        // If instruction...
-        const iobj = this._getInstructionFromString(parts[0].toUpperCase());
-        if (iobj !== null) {
-          parts.shift();
-          let uinstruction = iobj.instruction.toUpperCase();
-          const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, ntype: iobj.ntype, instruction: undefined, opcode: NaN, args: [], };
-          try {
-            this._parseInstruction(uinstruction, parts, instructionLine);
-          } catch (e) {
-            if (e instanceof AssemblerError) {
-              e.setUnderlineString(line);
-              e.insertMessage(`Error whilst parsing instruction ${uinstruction}:`);
-            }
-            throw e;
-          }
-          if (this.removeNOPs && instructionLine.instruction === 'NOP') {
-            // Do not add NOP instruction
-          } else {
-            ast.push(instructionLine);
-          }
-        } else if (parts[0][parts[0].length - 1] === ':') { // Label
+        if (parts[0][parts[0].length - 1] === ':') {
+          // LABEL
           const label = parts[0].substr(0, parts[0].length - 1);
           if (parts.length === 1) {
             if (isValidSymbol(label)) {
-              const labelLine: IAssemblySymbolDeclarationLine = { type: AssemblyLineType.Symbol, symbol: label, };
-              ast.push(labelLine);
+              this._symbols.set(label, byteOffset.toString());
             } else {
               const error = new AssemblerError(`Syntax Error: invalid label; must match ${label_regex}`, label);
               error.setUnderlineString(line);
@@ -168,34 +143,8 @@ export class Assembler {
             error.setUnderlineString(line);
             throw error;
           }
-        } else if (parts[1].toLowerCase() === 'equ') {
-          const name = parts[0];
-          if (isValidSymbol(name)) {
-            let string = line.substr(name.length + line.substr(name.length).indexOf('equ') + 3).trim();
-            const expr = new Expression(string);
-            this._symbols.forEach((value, key) => expr.setSymbol(key, +value));
-            try {
-              expr.parse();
-            } catch (e) {
-              const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, string);
-              error.appendMessage(e.message);
-              error.setUnderlineString(line);
-              throw error;
-            }
-            const result = expr.evaluate();
-            if (result.error) {
-              const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, string);
-              error.appendMessage(result.msg);
-              error.setUnderlineString(line);
-              throw error;
-            }
-            this._symbols.set(name, result.value.toString());
-          } else {
-            const error = new AssemblerError(`Syntax Error: invalid name; must match ${label_regex}`, name);
-            error.setUnderlineString(line);
-            throw error;
-          }
         } else if (parts[0][0] === '.') {
+          // DIRECTIVES
           let cmd = parts[0].substr(1);
           if (cmd === 'stop') {
             break;
@@ -213,13 +162,10 @@ export class Assembler {
               throw error;
             }
             const ntype = cmd === 'data' ? this._cpu.numType : numericTypeToObject["uint8"];
-            const buffer = new ArrayBuffer(bytes.length * ntype.bytes), dataview = new DataView(buffer);
-            // Fill buffer
-            for (let i = 0, off = 0; i < bytes.length; i++, off += ntype.bytes) {
-              dataview[ntype.setMethod](off, bytes[i]);
+            for (let i = 0; i < bytes.length; i++) {
+              memory[ntype.setMethod](byteOffset, bytes[i]);
+              byteOffset += ntype.bytes;
             }
-            const instructionLine: IAssemblyBytesDeclarationLine = { type: AssemblyLineType.Data, data: buffer };
-            ast.push(instructionLine);
           } else if (cmd === 'equ') { // Define constant
             // Valid name?
             if (isValidSymbol(parts[1])) {
@@ -227,7 +173,7 @@ export class Assembler {
               string = string.substr(string.indexOf(parts[1]) + parts[1].length).trim();
               this._symbols.set(parts[1], string);
             } else {
-              const error = new AssemblerError(`Syntax Error: invalid syntax: expected symbol`, parts[1]);
+              const error = new AssemblerError(`Syntax Error: expected symbol`, parts[1]);
               error.setUnderlineString(line);
               throw error;
             }
@@ -236,10 +182,62 @@ export class Assembler {
             error.setUnderlineString(line);
             throw error;
           }
+        } else if (parts[1]?.toLowerCase() === 'equ') {
+          // EQU statement
+          const name = parts[0];
+          if (isValidSymbol(name)) {
+            let string = line.substr(name.length + line.substr(name.length).indexOf('equ') + 3).trim();
+            const expr = new Expression(string);
+            expr.setSymbol('$', lineOffset);
+            symbolExprs.set(name, expr);
+          } else {
+            const error = new AssemblerError(`Syntax Error: invalid name; must match ${label_regex}`, name);
+            error.setUnderlineString(line);
+            throw error;
+          }
         } else {
-          const error = new AssemblerError(`Syntax Error: invalid syntax`, parts[0]);
-          error.setUnderlineString(line);
-          throw error;
+          // INSTRUCTION?
+          const iobj = this._getInstructionFromString(parts[0].toUpperCase()); // Parse as instruction
+          if (iobj !== null) { // Instruction!
+            parts.shift();
+            let uinstruction = iobj.instruction.toUpperCase();
+            const instructionLine: IAssemblyInstructionLine = { type: AssemblyLineType.Instruction, ntype: iobj.ntype, instruction: undefined, opcode: NaN, args: [], };
+            try {
+              this._parseInstruction(uinstruction, parts, instructionLine);
+            } catch (e) {
+              if (e instanceof AssemblerError) {
+                e.setUnderlineString(line);
+                e.insertMessage(`Error whilst parsing instruction ${uinstruction}:`);
+              }
+              throw e;
+            }
+            let typeObj: INumberType;
+
+            // INSTRUCTION BYTES
+            typeObj = this._cpu.numType;
+            memory[typeObj.setMethod](byteOffset, instructionLine.opcode);
+            byteOffset += typeObj.bytes;
+
+            // TYPE SUFFIX
+            if (this._cpu.instructTypeSuffixes && this._imap[instructionLine.instruction].typeSuffix) {
+              memory.setUint8(byteOffset++, numberTypeMap[instructionLine.ntype]);
+            }
+
+            // ARGUMENTS
+            instructionLine.args.forEach(arg => {
+              typeObj = numericTypeToObject[arg.ntype];
+              if (arg.type === AssemblerType.Symbol) {
+                symbolIndexes.set(byteOffset, { symbol: arg.value, type: arg.ntype, def: line }); // Record that we need to insert a label value here
+              } else {
+                memory[typeObj.setMethod](byteOffset, arg.num); // Insert numerical value into memory
+              }
+              byteOffset += typeObj.bytes;
+            });
+          } else {
+            const error = new AssemblerError(`Syntax Error: invalid syntax`, parts[0]);
+            error.setUnderlineString(line);
+            throw error;
+          }
         }
       } catch (e) {
         if (e instanceof AssemblerError) {
@@ -251,110 +249,41 @@ export class Assembler {
       }
     }
 
-    return ast;
-  }
-
-  /**
-   * Parse AST, return number[] array of "bytes"
-   */
-  private _astToBuffer(ast: IAssemblyLine[]): ArrayBuffer {
-    let buff: ArrayBuffer, dv: DataView, bytes = 0;
-    let address = this.startAddress; // Current address
-
-    // Calculate byte length
-    ast.forEach(line => {
-      if (line.type === AssemblyLineType.Instruction) {
-        bytes += this._cpu.instructType.bytes; // Instruction
-        // console.log(`${line.instruction}: + ${this._cpu.instructType.bytes}`)
-        if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) {
-          // console.log(`${line.instruction}: + 1 (type)`)
-          bytes++;
-        }
-        line.args.forEach(arg => {
-          bytes += numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes;
-          // console.log(`${line.instruction}: arg: + ${numericTypeToObject[arg.ntype]?.bytes ?? this._cpu.numType.bytes}`, arg)
-        });
-      } else if (line.type === AssemblyLineType.Data) {
-        bytes += (line as IAssemblyBytesDeclarationLine).data.byteLength;
-      }
-    });
-    buff = new ArrayBuffer(bytes);
-    dv = new DataView(buff);
-
-    // Resolve label addresses
-    for (let i = 0; i < ast.length; i++) {
-      const line = ast[i];
-      if (line.type === AssemblyLineType.Symbol) {
-        this._symbols.set((line as IAssemblySymbolDeclarationLine).symbol, address.toString());
-      } else if (line.type === AssemblyLineType.Instruction) {
-        const startAddress = address;
-        address += this._cpu.instructType.bytes;
-        if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) bytes++;
-        line.args.forEach(arg => {
-          if (arg.type === AssemblerType.Symbol && arg.value === '$') {
-            arg.num = startAddress;
-            arg.type = AssemblerType.Constant;
-          }
-          address += numericTypeToObject[arg.ntype].bytes;
-        });
-      }
-    }
-
-    // Resolve label names
-    ast.forEach(line => {
-      if (line.args) line.args.forEach((arg, i) => {
-        if (arg.type === AssemblerType.Symbol) {
-          arg.type = AssemblerType.Address;
-          if (this._symbols.has(arg.value)) arg.num = +this._symbols.get(arg.value);
-          else throw new AssemblerError(`'${line.instruction}' operand ${i}: SYMBOL: Cannot find symbol '${arg.value}'`, arg.value);
-        }
-      });
-    });
-
-    let byteOffset = 0; // Byte offset into buffer
-    for (let i = 0, typeObj: INumberType; i < ast.length; i++) {
+    // EVALUATE SYMBOLS
+    symbolExprs.forEach((expr, symbol) => {
+      const raw = expr.getRaw();
+      this._symbols.forEach((value, key) => expr.setSymbol(key, +value));
       try {
-        let line = ast[i];
-
-        if (line.type === AssemblyLineType.Instruction) {
-          const info = line as IAssemblyInstructionLine;
-          typeObj = this._cpu.instructType;
-          dv[typeObj.setMethod](byteOffset, info.opcode); // Add opcode to memory
-          byteOffset += typeObj.bytes;
-
-          if (this._cpu.instructTypeSuffixes && this._imap[line.instruction].typeSuffix) {
-            dv.setUint8(byteOffset++, numberTypeMap[info.ntype]);
-          }
-
-          info.args.forEach(arg => {
-            typeObj = numericTypeToObject[arg.ntype];
-            dv[typeObj.setMethod](byteOffset, arg.num); // Add argument's numeric representation to memory
-            byteOffset += typeObj.bytes;
-          });
-        } else if (line.type === AssemblyLineType.Symbol) { }
-        else if (line.type === AssemblyLineType.Data) {
-          const dataline = line as IAssemblyBytesDeclarationLine;
-          let dataDV = new DataView(dataline.data);
-          for (let off = 0; off < dataDV.byteLength; off++) {
-            dv.setUint8(byteOffset + off, dataDV.getUint8(off));
-          }
-          byteOffset += dataDV.byteLength;
-        } else {
-          let json = JSON.stringify(line);
-          const error = new AssemblerError(`Unknown token type '${line.type}'`, `"type":${line.type}`);
-          error.setUnderlineString(json);
-          throw error;
-        }
+        expr.parse();
       } catch (e) {
-        if (e instanceof AssemblerError) {
-          e.lineNumber = i;
-          e.insertMessage(`Whilst traversing AST line ${i + 1}:`);
-        }
-        throw e;
+        const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, raw);
+        error.appendMessage(e.message);
+        error.setUnderlineString(raw);
+        throw error;
       }
-    }
+      const result = expr.evaluate();
+      if (result.error) {
+        const error = new AssemblerError(`Syntax Error: invalid EQU statement:`, raw);
+        error.appendMessage(result.msg);
+        error.setUnderlineString(raw);
+        throw error;
+      }
+      this._symbols.set(symbol, result.value.toString());
+    });
 
-    return buff;
+    // INSERT SYMBOLS INTO MEMORY
+    symbolIndexes.forEach(({ symbol, type, def }, offset) => {
+      if (!this._symbols.has(symbol)) {
+        let err = new AssemblerError(`SYMBOL: reference to unbound symbol ${symbol} at +0x${offset.toString(16)}`, symbol);
+        err.setUnderlineString(def);
+        throw err;
+      }
+      let value = +this._symbols.get(symbol);
+      if (isNaN(value)) value = 0;
+      memory[numericTypeToObject[type].setMethod](offset, value);
+    });
+
+    return buff.slice(0, byteOffset);
   }
 
   /** Parse an instruction */
@@ -368,10 +297,29 @@ export class Assembler {
       line.args.push(obj);
     }
 
+    let virtualArgs = [...line.args];
+    for (let i = 0; i < virtualArgs.length; i++) {
+      if (virtualArgs[i].type === AssemblerType.Symbol) {
+        const value = this._symbols.get(virtualArgs[i].value);
+        if (value) {
+          const registerMeta = this._cpu.registerMap[value.toLowerCase()];
+          if (registerMeta) {
+            line.args[i].type = AssemblerType.Register;
+            line.args[i].num = registerMeta.offset;
+            line.args[i].ntype = registerMeta.type ?? this._cpu.regType.type;
+            virtualArgs[i] = line.args[i];
+            continue;
+          }
+        }
+
+        virtualArgs[i] = { type: AssemblerType.Constant } as IAssemblerToken;
+      }
+    }
+
     // Check if a suitable instruction exists
     for (let operation in this._imap) {
       const commandInfo = this._imap[operation];
-      if (commandInfo.mnemonic === instruction && matchesTypeSignature(line.args, commandInfo.args)) {
+      if (commandInfo.mnemonic === instruction && matchesTypeSignature(virtualArgs, commandInfo.args)) {
         if (commandInfo.opcode == undefined || isNaN(commandInfo.opcode)) {
           throw new AssemblerError(`Cannot resolve variant ${operation} of ${instruction} to opcode`, instruction);
         } else {
@@ -384,7 +332,7 @@ export class Assembler {
 
     // If there was no match...
     if (line.instruction === undefined) {
-      const arg_types = line.args.map(x => `<${AssemblerType[x.type]}>`).join(' ');
+      const arg_types = virtualArgs.map(x => `<${AssemblerType[x.type]}>`).join(' ');
       const error = new AssemblerError(`${instruction}: cannot find overload which matches provided arguments:`, ``);
       error.appendMessage(`${instruction} ${arg_types}`);
       error.highlightWholeLine = true;

@@ -1,9 +1,8 @@
 import { AssemblerError } from "../classes/Assembler";
 import Popup from "../classes/Popup";
 import globals from "../globals";
-import { AssemblerType, AssemblyLineType, IAssemblyInstructionLine } from "../types/Assembler";
 import { ICodeTabProperties, ITabInfo } from "../types/Tabs";
-import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, numericTypesAbbr, numericTypeToObject, numericTypesAbbrEnum, readTextFile } from "../utils/general";
+import { arrayToBuffer, bufferToArray, downloadTextFile, insertNumericalBaseInput, numberFromString, numberToString, numericTypeToObject, numericTypesAbbrEnum, readTextFile } from "../utils/general";
 import { errorBackground, errorForeground, loadCodeFont, withinState, writeMultilineString } from "../utils/Screen";
 
 export const info: ITabInfo = {
@@ -14,8 +13,7 @@ export const info: ITabInfo = {
 
 export const properties: ICodeTabProperties = {
   assemblyCodeInput: undefined,
-  partailTranslationWrapper: undefined,
-  partialTranslatedInput: undefined,
+  symbolTableWrapper: undefined,
   symbolTable: undefined,
   machineCodeInput: undefined,
   machineCode: undefined,
@@ -96,14 +94,10 @@ function generateAssemblyHTML(): HTMLDivElement {
 }
 
 /** Partial translation between assembly and machine code */
-function generatePartialHTML() {
+function generateSymbolTableHTML() {
   const wrapper = document.createElement('div');
-  wrapper.classList.add('input-partial-wrapper');
-  properties.partailTranslationWrapper = wrapper;
-
-  const title = document.createElement('h2');
-  wrapper.appendChild(title);
-  title.insertAdjacentHTML('beforeend', 'Partial Translation ');
+  wrapper.classList.add('input-symboltable-wrapper');
+  properties.symbolTableWrapper = wrapper;
 
   const table = document.createElement('table');
   table.classList.add("no-border");
@@ -111,18 +105,8 @@ function generatePartialHTML() {
   let tr = document.createElement('tr');
   table.appendChild(tr);
 
-  // Text input
-  let td = document.createElement('td');
-  tr.appendChild(td);
-  const textarea = document.createElement('textarea');
-  td.appendChild(textarea);
-  properties.partialTranslatedInput = textarea;
-  textarea.readOnly = true;
-  textarea.rows = 10;
-  textarea.cols = 100;
-
   // Symbol table
-  td = document.createElement('td');
+  let td = document.createElement('td');
   tr.appendChild(td);
   const symbolTable = document.createElement("table");
   td.appendChild(symbolTable);
@@ -264,7 +248,7 @@ export function compileAssembly() {
     });
 
     properties.machineCode = buffer;
-    displayPartialTranslation();
+    updateSymbolTable();
     displayMachineCode();
   }
 }
@@ -311,24 +295,6 @@ export function decompileMachineCode() {
   }
 }
 
-function displayPartialTranslation() {
-  updateSymbolTable();
-  const lines = globals.assembler.getAST();
-  const type = t => globals.cpu.instructTypeSuffixes ? `(${numericTypesAbbrEnum[t]})` : '';
-  let text = '', itype = globals.cpu.instructType.type;
-  for (const line of lines) {
-    if (line.type === AssemblyLineType.Instruction) {
-      const info = line as IAssemblyInstructionLine;
-      text += `[${info.instruction}] ${type(itype)}${info.opcode}`;
-      if (info.args.length > 0) {
-        text += ` : ${info.args.map(a => `<${AssemblerType[a.type].toLowerCase()}> ${type(a.ntype)}${a.num == undefined ? `'${a.value}'` : a.num}`).join(', ')}`;
-      }
-      text += '\n';
-    }
-  }
-  properties.partialTranslatedInput.value = text;
-}
-
 function displayMachineCode() {
   // Machine code - array of uint8 bytes
   let machineCode = '';
@@ -370,6 +336,6 @@ export function init() {
   info.content = content;
 
   content.appendChild(generateAssemblyHTML());
-  content.appendChild(generatePartialHTML());
+  content.appendChild(generateSymbolTableHTML());
   content.appendChild(generateBinaryHTML());
 }

@@ -150,8 +150,15 @@ function __app_main_() {
   // hlt
   //   `.trim();
   tabCode.properties.assemblyCodeInput.value = `
-.equ one 2+2
-two equ 2+2
+syscall #11
+mov r0, msg
+mov r1, len
+syscall #10
+halt
+
+msg:
+  .data "Hello World", 0
+len equ ($ - msg) - WORD
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

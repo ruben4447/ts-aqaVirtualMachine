@@ -1,3 +1,4 @@
+import globals from "../../globals";
 import { IInstructionSet } from "../../types/Assembler";
 import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecutionConfig, ICPUInstructionSet, IExecuteRecord, IRegisterInfo, IReversedCPUInstructionSet, MemoryWriteCallback, RegisterWriteCallback } from "../../types/CPU";
 import { INumberType, NumberType } from "../../types/general";
@@ -58,7 +59,7 @@ export class CPU {
       roff = 24;
       const rCount = 10;
       for (let i = 0; i < rCount; i++, roff += 8)
-        this.registerMap['r' + i] = createRegister(roff, 'float64', i <= rCount/2);
+        this.registerMap['r' + i] = createRegister(roff, 'float64', i <= rCount / 2);
     }
 
     let regBytes = 0;
@@ -291,7 +292,7 @@ export class CPU {
       const size = this.readMemory(addr, type);
       frame.size = { value: size, desc: 'Last stack frame size', type, addr };
       addr += type.bytes; // StackFrameSize is always uint32
-    
+
       type = numericTypeToObject[this.registerMap[this.regInstructionPtr].type];
       const ip = this.readMemory(addr, type);
       frame[this.regInstructionPtr] = { value: ip, desc: 'Instruction Pointer', type, addr };
@@ -329,7 +330,21 @@ export class CPU {
 
   /** Syscall */
   public syscall(arg) {
-    switch(arg) {
+    switch (arg) {
+      case 10: { // WRITE
+        const address = this.readRegister('r0'), length = this.readRegister('r1');
+        let string: string = '';
+        for (let i = 0; i < length; i += this.numType.bytes) {
+          let n = this.readMemory(address + i, this.numType);
+          string += String.fromCharCode(n);
+        }
+        globals.output.writeString(string);
+        break;
+      }
+      case 11: { // CLEAR
+        globals.output.clear();
+        break;
+      }
       default:
         throw new Error(`[SIGABRT] Unknown syscall ${arg}`);
     }

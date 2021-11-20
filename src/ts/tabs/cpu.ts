@@ -215,20 +215,20 @@ function generateHTML(): HTMLDivElement {
   // Show partial translation
   tr = document.createElement('tr');
   tbody.appendChild(tr);
-  tr.insertAdjacentHTML('beforeend', `<th><abbr title='Show Partial Translation section in "code" tab'>Show Partial Translation</abbr></th>`);
+  tr.insertAdjacentHTML('beforeend', `<th><abbr title='Show symbol table in "code" tab'>Show Symbol Table</abbr></th>`);
   td = document.createElement("td");
   tr.appendChild(td);
-  const inputPartialTranslation = document.createElement("input");
-  inputPartialTranslation.type = "checkbox";
-  inputPartialTranslation.checked = globals.tabs.code.partailTranslationWrapper.style.display !== "none";
-  inputPartialTranslation.addEventListener('change', () => {
-    if (inputPartialTranslation.checked) {
-      globals.tabs.code.partailTranslationWrapper.style.display = "block";
+  const inputSymbolTable = document.createElement("input");
+  inputSymbolTable.type = "checkbox";
+  inputSymbolTable.checked = globals.tabs.code.symbolTableWrapper.style.display !== "none";
+  inputSymbolTable.addEventListener('change', () => {
+    if (inputSymbolTable.checked) {
+      globals.tabs.code.symbolTableWrapper.style.display = "block";
     } else {
-      globals.tabs.code.partailTranslationWrapper.style.display = "none";
+      globals.tabs.code.symbolTableWrapper.style.display = "none";
     }
   });
-  td.appendChild(inputPartialTranslation);
+  td.appendChild(inputSymbolTable);
 
   // De-Assembler: translate JUMP commands to BRANCH commands w/ labels?
   tr = document.createElement('tr');

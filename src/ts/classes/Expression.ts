@@ -21,6 +21,7 @@ const TOKEN_OP = 1;
 const TOKEN_NUM = 2;
 const TOKEN_SYM = 4;
 const LABELREGEX = /^[A-Za-z][A-Za-z0-9_\$]*$/;
+const LABELREGEXALL = /^[A-Za-z0-9_\$]*$/;
 
 type Tokens = Array<IToken | IOperator>;
 
@@ -43,6 +44,8 @@ export class Expression {
   public load(expr: string) {
     this._raw = expr;
   }
+
+  public getRaw() { return this._raw; }
 
   public setSymbol(name: string, value?: number) {
     this._symbols.set(name, value);
@@ -69,6 +72,12 @@ export class Expression {
       if (/\s/.test(this._raw[i])) {
         i += this._raw[i].length;
         continue;
+      } else if (this._raw[i] === '(') {
+        token = { type: TOKEN_OP, value: '(' };
+        i += 1;
+      } else if (this._raw[i] === ')') {
+        token = { type: TOKEN_OP, value: ')' };
+        i += 1;
       } else if (this._raw[i] === '*' && this._raw[i + 1] === '*') {
         token = <IOperator>{ type: TOKEN_OP, value: '**', unary: false, action: (a: number, b: number) => Math.pow(a, b), assoc: 'rtl', prec: 16 };
         i += 2;
@@ -97,8 +106,11 @@ export class Expression {
         token = <IOperator>{ type: TOKEN_OP, value: ',', unary: false, action: (a: string, b: number) => b, assoc: 'ltr', prec: 1 };
         i += 1;
       } else {
-        let nextSpace = this._raw.substr(i).indexOf(' ');
-        let symbol = nextSpace === -1 ? this._raw.substr(i) : this._raw.substring(i, nextSpace);
+        let symbol: string = '', j = i;
+        while (this._raw[j] && LABELREGEXALL.test(this._raw[j])) {
+          symbol += this._raw[j++];
+        }
+
         if (this.hasSymbol(symbol) || LABELREGEX.test(symbol)) {
           token = <IToken>{ type: TOKEN_SYM, value: symbol };
           i += symbol.length;

@@ -1,5 +1,4 @@
 import { AssemblerType, IAssemblerToken } from "../types/Assembler";
-import { getNumericBaseFromPrefix } from "./general";
 
 const _symbolCompatible = [AssemblerType.Constant, AssemblerType.Address];
 
@@ -7,7 +6,6 @@ const _symbolCompatible = [AssemblerType.Constant, AssemblerType.Address];
 export function matchesTypeSignature(tokens: IAssemblerToken[], types: AssemblerType[]): boolean {
   if (tokens.length !== types.length) return false;
   for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i].type === AssemblerType.Symbol && _symbolCompatible.includes(types[i])) continue; // Symbols may be converted to pretty much anything
     if (tokens[i].type !== types[i]) return false;
   }
   return true;

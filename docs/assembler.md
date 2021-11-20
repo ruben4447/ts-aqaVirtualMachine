@@ -84,6 +84,8 @@ SYNTAX `.equ <name> <value>`
 
 Defines constant `name`. Assembler replaces all instances of `name` with un-processed `value`.
 
+If `value` is equivalent to a register name, and the constant is defined before it is used, then the register offset is used and is type `<Register>`. Else, a constant is of type `<Constant>`.
+
 ### `.skip`
 SYNTAX `.skip`
 
@@ -100,3 +102,10 @@ SYNTAX: `<name> equ <value>`
 **`<value>` IS PROCESSED**, unlike `.equ`
 
 Defines constant `name` with **processed** `value`. Assembler replaces all instances of `name` with this value.
+
+All constants are interpreted in instructions as indirect addressing.
+
+### Predefined Constants
+- `$` contains address of start of line
+- `WORD` contains byte-length of CPU word
+- `REGS` contains number of registers

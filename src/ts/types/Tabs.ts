@@ -18,8 +18,7 @@ export interface ITabInfo {
 /** Properties for tab:"code" */
 export interface ICodeTabProperties {
   assemblyCodeInput: HTMLTextAreaElement;
-  partailTranslationWrapper: HTMLDivElement;
-  partialTranslatedInput: HTMLTextAreaElement;
+  symbolTableWrapper: HTMLDivElement;
   symbolTable: HTMLTableSectionElement;
   machineCode: ArrayBuffer;
   machineCodeInput: HTMLTextAreaElement;
