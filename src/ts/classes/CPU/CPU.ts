@@ -4,6 +4,7 @@ import { CPUModel, createCPUExecutionConfigObject, ICPUConfiguration, ICPUExecut
 import { INumberType, NumberType } from "../../types/general";
 import { createRegister, generateCPUInstructionSet } from "../../utils/CPU";
 import { getNumTypeInfo, numberToString, reverseKeyValues, numericTypeToObject } from "../../utils/general";
+import { FileDescriptor, FileMode } from "../FileDescriptor";
 
 export class CPUError extends Error {
   constructor(message: string) {
@@ -38,6 +39,8 @@ export class CPU {
   protected _callbackMemoryWrite: MemoryWriteCallback;
   protected _callbackRegisterWrite: RegisterWriteCallback;
   protected _stackFrameSize = 0; // Size (in bytes) of latest stack frame
+  protected _fileDescriptors: FileDescriptor[] = [];
+  public files = new Map<string, FileDescriptor>();
 
   constructor(instructionSet: IInstructionSet, config: ICPUConfiguration, defaultNumType = CPU.defaultNumType) {
     this.instructionSet = generateCPUInstructionSet(instructionSet);
@@ -157,6 +160,36 @@ export class CPU {
     return buffer;
   }
 
+  /** Read from region of memory */
+  public readMemoryBytes(startAddress: number, bytes: number): ArrayBuffer {
+    const buffer = new ArrayBuffer(bytes), view = new DataView(buffer);
+    for (let off = 0; off < bytes; off++) {
+      view.setUint8(off, this._memory.getUint8(startAddress + off));
+    }
+    return buffer;
+  }
+
+  /** Read string from memory */
+  public readString(address: number, length: number): string {
+    let string = "";
+    for (let i = 0; i < length; i += this.numType.bytes) {
+      let n = this.readMemory(address + i, this.numType);
+      string += String.fromCharCode(n);
+    }
+    return string;
+  }
+
+  /** Read null-byted string from memory */
+  public readNullString(address: number): string {
+    let string = "";
+    for (let i = 0; ; i += this.numType.bytes) {
+      let n = this.readMemory(address + i, this.numType);
+      if (n === 0) break;
+      string += String.fromCharCode(n);
+    }
+    return string;
+  }
+
   /** Write value to memory. Address is in BYTES. */
   public writeMemory(address: number, value: number, numType?: INumberType): void {
     numType = numType ?? this.numType;
@@ -168,18 +201,17 @@ export class CPU {
     if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address + numType.bytes, this);
   }
 
-  /** Write bytes to a single memory address. Return number this represents. */
+  /** Write bytes to memory */
   public writeMemoryBytes(address: number, bytes: ArrayBuffer, numType?: INumberType): number {
     numType = numType ?? this.numType;
     try {
       if (bytes.byteLength !== numType.bytes) throw new RangeError(`writeMemoryBytes: Date type is ${numType.type} which requires ${numType.bytes} bytes; got ${bytes.byteLength} bytes`);
       const view = new DataView(bytes);
-      let actualAddress = address * numType.bytes;
       for (let i = 0; i < view.byteLength; i++) {
-        this._memory.setUint8(actualAddress + i, view.getUint8(i));
+        this._memory.setUint8(address + i, view.getUint8(i));
       }
       if (typeof this._callbackMemoryWrite === 'function') this._callbackMemoryWrite(address, address + numType.bytes, this);
-      return this._memory[numType.getMethod](actualAddress);
+      return this._memory[numType.getMethod](address);
     } catch (e) {
       throw new Error(`writeMemoryBytes: unable to write ${bytes.byteLength} bytes to address 0x${address.toString(16)}:\n${e}`);
     }
@@ -329,15 +361,24 @@ export class CPU {
   }
 
   /** Syscall */
-  public syscall(arg) {
+  public syscall(arg: number) {
     switch (arg) {
+      case 1: // EXIT
+        throw new Error(`sys_exit: Exiting with code ${this.readRegister('r0')}`);
+      case 3: // READ
+        return this.sys_read(this.readRegister("r0"), this.readRegister("r1"), this.readRegister("r2"), this.readRegister("r3"));
+      case 4: // WRITE
+        return this.sys_write(this.readRegister("r0"), this.readRegister("r1"), this.readRegister("r2"), this.readRegister("r3"));
+      case 5: // OPEN
+        return this.sys_open(this.readString(this.readRegister("r0"), this.readRegister("r1")), this.readRegister("r2"));
+      case 6: // CLOSE
+        return this.sys_close(this.readRegister("r0"));
+      case 33: // TIME
+        return Date.now();
+
       case 10: { // WRITE
         const address = this.readRegister('r0'), length = this.readRegister('r1');
-        let string: string = '';
-        for (let i = 0; i < length; i += this.numType.bytes) {
-          let n = this.readMemory(address + i, this.numType);
-          string += String.fromCharCode(n);
-        }
+        let string = this.readString(address, length);
         globals.output.writeString(string);
         break;
       }
@@ -348,6 +389,52 @@ export class CPU {
       default:
         throw new Error(`[SIGABRT] Unknown syscall ${arg}`);
     }
+  }
+
+  /** Check that a file descriptor exists */
+  protected _getFileDescriptor(fd: number) {
+    if (this._fileDescriptors[fd]) return this._fileDescriptors[fd];
+    throw new Error(`[EBADF] Cannot locate file descriptor 0x${fd.toString(16)}`);
+  }
+
+  /** Read contents of a FileDescriptor */
+  public sys_read(descriptor: number, start: number, len: number, address: number) {
+    const fd = this._getFileDescriptor(descriptor);
+    const buff = fd.read(start, len);
+    this.writeMemoryBytes(address, buff);
+    return 0;
+  }
+
+  /** Write to FileDescriptor */
+  public sys_write(descriptor: number, address: number, len: number, offset: number) {
+    const fd = this._getFileDescriptor(descriptor);
+    fd.write(offset, this.readMemoryBytes(address, len));
+    return 0;
+  }
+
+  /** Open a file using a filename */
+  public sys_open(fname: string, mode: FileMode) {
+    if (!this.files.has(fname)) {
+      this.files.set(fname, new FileDescriptor(0, mode));
+    }
+    let fd = this.files.get(fname);
+    fd.mode = mode;
+    let descriptor: number;
+    for (let i = 0; ; ++i) {
+      if (!this._fileDescriptors[i]) {
+        descriptor = i;
+        this._fileDescriptors[i] = fd;
+        break;
+      }
+    }
+    return descriptor;
+  }
+
+  /** Close a FileDescriptor */
+  public sys_close(descriptor: number) {
+    const fd = this._getFileDescriptor(descriptor);
+    this._fileDescriptors[descriptor] = undefined;
+    return 0;
   }
 
   /** Get next word in memory, and increment IP */

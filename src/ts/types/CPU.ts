@@ -66,12 +66,3 @@ export interface IRegisterInfo {
   preserve: boolean; // Save to call stack in function calls
   desc?: string; // Description?
 }
-
-// export interface IFlagMasks {
-//   CF: 0x0001,
-//   PF: 0x0002,
-//   AF: 0x0004,
-//   ZF: 0x0008,
-//   SF: 0x0010,
-//   OF: 0x0020,
-// }

@@ -52,13 +52,3 @@ export interface IAssemblyInstructionLine extends IAssemblyLine {
   opcode: number;
   args: Array<IAssemblerToken>;
 }
-
-/** Represent an assembly symbol declaration line "<symbol>: ..." */
-export interface IAssemblySymbolDeclarationLine extends IAssemblyLine {
-  symbol: string;
-}
-
-/** Represent an assembly data declaration line */
-export interface IAssemblyBytesDeclarationLine extends IAssemblyLine {
-  data: ArrayBuffer;
-}

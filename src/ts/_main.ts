@@ -11,7 +11,7 @@ import * as tabCPU from "./tabs/cpu";
 import globals from "./globals";
 import { CPUModel, ICPUConfiguration } from "./types/CPU";
 import * as utils from './utils/general';
-import { loadCodeFont, withinState, writeInCentre, writeMultilineInCentre } from "./utils/Screen";
+import { loadCodeFont, withinState, writeMultilineInCentre } from "./utils/Screen";
 
 import { instructionSet as aqaInstructionSet } from './instruction-set/aqa-arm';
 import { instructionSet as aqaInstructionSetExtended } from './instruction-set/aqa-arm-extended';
@@ -22,7 +22,6 @@ import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
-import { parseByteList } from "./utils/Assembler";
 globalThis.utils = utils;
 
 /**
@@ -112,18 +111,11 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   globals.tabs._ = tabManager;
 
   // Message to user
-  const logPad = '-'.repeat(20);
-  console.log(logPad);
-  console.log(`%cNew Processor: %c${cpu.model}`, 'color:lime;background:black;', 'color:yellow;background:black;');
-  console.log(`%cCPU Data Type%c = %c${cpu.numType.type}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Memory Size%c = %c0x${utils.hex(cpu.memorySize)}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(`%cCPU Registers%c = %c${Object.keys(cpu.registerMap).length}`, 'color:lime;background:black;', '', 'color:yellow;background:black;');
-  console.log(logPad);
   withinState(globals.output, S => {
     S.reset();
     loadCodeFont(S);
     S.setForeground('lime');
-    writeMultilineInCentre(S, `-- Virtual Processor created --\nModel: '${cpu.model}'\nNum Type ${cpu.numType.type}; memory capacity 0x${cpu.memorySize.toString(16)}\nSee \'CPU\' tab for more`.toUpperCase());
+    writeMultilineInCentre(S, `-- Virtual Processor Created --\nModel: ${cpu.model}\n${cpu.numType.type}; memory 0x${cpu.memorySize.toString(16)}\nSee \'CPU\' tab for more`.toUpperCase());
   });
 
   return main;
@@ -136,26 +128,31 @@ function __app_main_() {
   });
 
   tabCode.properties.insertHalt = false;
-  // tabCode.properties.partailTranslationWrapper.style.display = "none";
 
   // Prompt user
   tabCode.properties.assemblyCodeInput.value = "; Start typing assembly code here!\n";
 
   globals.tabs._.open("code");
 
-  //   tabCode.properties.assemblyCodeInput.value = `
-  // movi64 r10, #xfffffffff
-  // movi64 r11, #xdeeeeeeee
-  // and r10, r11
-  // hlt
-  //   `.trim();
   tabCode.properties.assemblyCodeInput.value = `
-nop
-.loop:
-b .loop
-.loop:
-b .loop
+mov r0, fname
+mov r1, fname_len
+mov r2, #3 ; Read & Write
+syscall #5 ; Create file with fname. Store descriptor in r1
+
+mov r0, r1
+mov r1, data
+mov r2, data_len
+syscall #4 ; Write
+syscall #6 ; Close
 halt
+
+fname:
+  .data "my-file.txt"
+fname_len equ $ - fname
+data:
+  .bytes "Hello World"
+data_len equ $ - data
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);

@@ -1,5 +1,5 @@
 import CPU from "./CPU/CPU";
-import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine, IAssemblyLine, IAssemblySymbolDeclarationLine, IAssemblyBytesDeclarationLine } from "../types/Assembler";
+import { AssemblerType, AssemblyLineType, IInstructionSet, IAssemblerToken, IAssemblyInstructionLine } from "../types/Assembler";
 import { decodeEscapeSequence, isValidSymbol, label_regex, matchesTypeSignature, parseByteList, parseCharLit } from "../utils/Assembler";
 import { bufferToArray, getNumericBaseFromPrefix, numericTypesAbbr, underlineStringPortion, numericTypeToObject, numberTypeMap } from "../utils/general";
 import { INumberType, NumberType } from "../types/general";
@@ -66,7 +66,6 @@ export class Assembler {
   private _bytes: ArrayBuffer;
   private _symbols: Map<string, string> = new Map();
   public startAddress = 0;
-  public removeNOPs: boolean = false;
 
   constructor(cpu: CPU, instructionMap: IInstructionSet) {
     this._imap = instructionMap;
