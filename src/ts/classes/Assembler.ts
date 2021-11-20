@@ -129,10 +129,14 @@ export class Assembler {
 
         if (parts[0][parts[0].length - 1] === ':') {
           // LABEL
-          const label = parts[0].substr(0, parts[0].length - 1);
+          let label = parts[0].substr(0, parts[0].length - 1), local = false;
+          if (label[0] === '.') {
+            label = label.substr(1);
+            local = true;
+          }
           if (parts.length === 1) {
             if (isValidSymbol(label)) {
-              this._symbols.set(label, byteOffset.toString());
+              this._symbols.set((local ? '.' : '') + label, byteOffset.toString());
             } else {
               const error = new AssemblerError(`Syntax Error: invalid label; must match ${label_regex}`, label);
               error.setUnderlineString(line);
@@ -227,7 +231,18 @@ export class Assembler {
             instructionLine.args.forEach(arg => {
               typeObj = numericTypeToObject[arg.ntype];
               if (arg.type === AssemblerType.Symbol) {
-                symbolIndexes.set(byteOffset, { symbol: arg.value, type: arg.ntype, def: line }); // Record that we need to insert a label value here
+                if (arg.value[0] === '.') { // LOCAL SYMBOL - replace now
+                  if (this._symbols.has(arg.value)) {
+                    const value = +this._symbols.get(arg.value);
+                    memory[typeObj.setMethod](byteOffset, isNaN(value) ? 0 : value);
+                  } else {
+                    let err = new AssemblerError(`SYMBOL: reference to unbound local symbol ${arg.value} at +0x${byteOffset.toString(16)}`, arg.value);
+                    err.setUnderlineString(line);
+                    throw err;
+                  }
+                } else {
+                  symbolIndexes.set(byteOffset, { symbol: arg.value, type: arg.ntype, def: line }); // Record that we need to insert a label value here
+                }
               } else {
                 memory[typeObj.setMethod](byteOffset, arg.num); // Insert numerical value into memory
               }
@@ -345,12 +360,6 @@ export class Assembler {
     const token: IAssemblerToken = { type: undefined, value: argument, num: undefined, };
     let expandedSymbol;
 
-    // Symbol?
-    if (this._symbols.has(argument)) {
-      expandedSymbol = argument;
-      argument = this._symbols.get(argument);
-    }
-
     // Pointer?
     if (argument.length > 1 && argument[0] == '*') {
       let argStr = argument.substr(1), token: IAssemblerToken;
@@ -417,7 +426,12 @@ export class Assembler {
           token.ntype = this._cpu.addrType.type;
         } else {
           // Symbol?
-          if (isValidSymbol(argument)) {
+          let local = false, label = argument;
+          if (label[0] === '.') {
+            label = label.substr(1);
+            local = true;
+          }
+          if (isValidSymbol(label)) {
             token.type = AssemblerType.Symbol;
           } else {
             if (expandedSymbol) {

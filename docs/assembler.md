@@ -49,15 +49,14 @@ These may be used in place of constant value
 
 SYNTAX: `'<character>'`, where `<character>` is any ascii characters. THe program will convert this to its ASCII code and substitute this as the constant value e.g, `MOV r1, 'A'` == `MOV r1, #65`
 
-### `$`
-The `$` token represents the current memory address at the beginning of the line *i.e.* `B $` causes an infinite loop.
-
 ## Labels
 These are markers defined in a program and can be branched to to allow control flow
 
 SYNTAX: `<label_name>:` (note: must be on a single line)
 
 The branching commands are `B, BEQ, BNE, BLT, BGT` and the syntax is `<branch_command> <label_name>`
+
+If a label begins with a `.`, it is defines as local. When encountered, label is immediately replaced with the address of the label instead of cached and replaced in the second pass. This means that local labels may be used multiple times.
 
 ## Directives
 SYNTAX: `.<directive> ...`
