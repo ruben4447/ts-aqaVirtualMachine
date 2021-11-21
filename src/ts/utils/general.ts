@@ -391,3 +391,10 @@ export function objectGroupBy<T>(o: T, groupByKey: string): { [group: string]: T
 export function booleanToHTML(bool: boolean): string {
   return bool ? `<span style='color:forestgreen;font-weight:bold;'>Yes</span>` : `<span style='color:tomato;'>No</span>`;
 }
+
+/** Clamp a number within a range */
+export const clamp = (min: number, max: number, n: number) => {
+  if (n < min) return min;
+  if (n > max) return max;
+  return n;
+};

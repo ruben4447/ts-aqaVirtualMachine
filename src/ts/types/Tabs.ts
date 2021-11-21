@@ -64,3 +64,12 @@ export interface IInstructionSetTabProperties {
 export interface ICPUTabProperties {
   content: HTMLDivElement;
 }
+
+/** Properties for tab:"files" */
+export interface IFilesTabProperties {
+  content: HTMLDivElement;
+  generateBtn: HTMLButtonElement;
+  update: () => void;
+  filelist: HTMLDivElement;
+  bufferView: HTMLDivElement;
+}

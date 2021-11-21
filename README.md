@@ -3,6 +3,9 @@ Virtual machine based on the AQA instruction set and assembly language (model: `
 
 There is also support for additional processor types.
 
+## Bugs
+- `.data` splits by comma regardless if comma is in a string
+
 ## Main Features
 - **AQA Assembly code compiler** - able to write AQA assembly code and compile this into machine code
 - **Execute machine code** - able to load machine code into memory and execute this - either one instruction at a time, or continous until HALTed

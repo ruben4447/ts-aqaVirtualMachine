@@ -8,6 +8,7 @@ import * as tabCode from "./tabs/code";
 import * as tabRun from "./tabs/run";
 import * as tabInstructionSet from "./tabs/instructionSet";
 import * as tabCPU from "./tabs/cpu";
+import * as tabFiles from "./tabs/files";
 import globals from "./globals";
 import { CPUModel, ICPUConfiguration } from "./types/CPU";
 import * as utils from './utils/general';
@@ -22,6 +23,7 @@ import ARMProcessorExtended from "./classes/CPU/AQA-ARM-Extended";
 import type CPU from "./classes/CPU/CPU";
 import RSProcessor from "./classes/CPU/RS";
 import { IInstructionSet } from "./types/Assembler";
+import { FileDescriptor } from "./classes/FileDescriptor";
 globalThis.utils = utils;
 
 /**
@@ -83,6 +85,9 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
   tabStack.init();
   globals.tabs.stack = tabStack.properties;
 
+  tabFiles.init();
+  globals.tabs.files = tabFiles.properties;
+
   tabCode.init();
   tabCode.properties.assemblyCodeInput.value = assemblyCode;
   globals.tabs.code = tabCode.properties;
@@ -105,6 +110,7 @@ export function __app_init_(model: CPUModel, cpuConfiguration: ICPUConfiguration
       run: tabRun.info,
       instructionSet: tabInstructionSet.info,
       cpu: tabCPU.info,
+      files: tabFiles.info
     },
     outputWrapper,
   );
@@ -156,6 +162,14 @@ data_len equ $ - data
   `.trim();
   tabCode.compileAssembly();
   tabCode.loadMachineCodeToMemory(0);
+  tabRun.run();
+
+  let uint8array = new Uint8Array("Hello, world".split('').map(c => c.charCodeAt(0)));
+  let fd = new FileDescriptor(uint8array.buffer, 3);
+  globals.cpu.files.set('hello.txt', fd);
+
+  globals.tabs._.open("files");
+  globals.tabs.files.update();
 }
 
 window.addEventListener('load', () => {

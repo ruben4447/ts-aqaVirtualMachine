@@ -397,6 +397,16 @@ export class CPU {
     throw new Error(`[EBADF] Cannot locate file descriptor 0x${fd.toString(16)}`);
   }
 
+  public getFileDescriptors() {
+    let map = new Map<number, FileDescriptor>();
+    for (let i = 0; i < this._fileDescriptors.length; i++) {
+      if (this._fileDescriptors[i]) {
+        map.set(i, this._fileDescriptors[i]);
+      }
+    }
+    return map;
+  }
+
   /** Read contents of a FileDescriptor */
   public sys_read(descriptor: number, start: number, len: number, address: number) {
     const fd = this._getFileDescriptor(descriptor);
